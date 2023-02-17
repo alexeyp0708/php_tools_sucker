@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit>
+    <testsuites>
+        <testsuite name="php8">
+            <directory phpVersion="8" phpVersionOperator=">=" suffix="Test.php">tests/PHP8</directory>
+        </testsuite>
+        <testsuite name="php74">
+            <directory phpVersion="7.4" phpVersionOperator=">=" suffix="Test.php">tests/</directory>
+            <exclude>tests/PHP8</exclude>
+        </testsuite>
+    </testsuites>
+</phpunit>
