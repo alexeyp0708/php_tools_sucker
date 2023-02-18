@@ -121,7 +121,7 @@ $propResult=$inst('prop');// hello
 # Alpa\Tools\Sucker\Proxy
 
 The component provides access to private and protected members of an object / class through a proxy object.
-In order to obtain private members of an object / class, the [Alpa\Tools\Sucker\Sucker] (#Alpa\Tools\Sucker\Sucker) component is used.
+In order to obtain private members of an object / class, the [Alpa\Tools\Sucker\Sucker](#alpatoolssuckersucker) component is used.
 And for syntactic sugar, the [Alpa\Tools\ProxyObject](https://github.com/alexeyp0708/php_tools_proxy_object) component is used.
 
 ```php
