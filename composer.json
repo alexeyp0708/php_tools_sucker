@@ -10,7 +10,8 @@
     }
   ],
   "require": {
-    "php": "^7.4||^8.0"
+    "php": "^7.4||^8.0",
+    "alpa/tools_proxy_object": "^1.0.10"
   },
   "autoload": {
     "psr-4": {

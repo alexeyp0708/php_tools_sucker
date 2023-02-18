@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Alpa\Tools\Tests\Sucker;
 
 use Alpa\Tools\Tests\Sucker\Fixtures\MyClass;
