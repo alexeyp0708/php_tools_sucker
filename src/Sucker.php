@@ -61,8 +61,10 @@ class Sucker
         $slaveClass = !empty($slaveClass) ? $slaveClass : (is_string($target) ? $target : get_class($target));
         $target = !is_string($target) ? $target : null;
         $call = $call->bindTo($target, $slaveClass);
-        self::refNoticeErrorHandler(true);
-        return $call(...$args); //restore обязательно т.к. ошибку может не выбросить, а значит и пред. обработчик не востановится 
+        self::refNoticeErrorHandler();
+        $answer=&$call(...$args);
+        restore_error_handler();
+        return $answer;
     }
 
     /**
@@ -97,13 +99,14 @@ class Sucker
         $target = !is_string($this->target) ? $this->target : null;
         $slaveClass = !empty($class) ? $class : (is_string($this->target) ? $this->target : get_class($this->target));
         $action = $action->bindTo($target, $slaveClass);
-        self::refNoticeErrorHandler(true);
+        self::refNoticeErrorHandler();
         //working line
         if($isSandbox){
             $answer=& $action(...$args);
         } else {
             $answer=& $action($name, ...$args);
         }
+        restore_error_handler();
         return $answer;
     }
 
