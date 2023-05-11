@@ -3,6 +3,25 @@ For unit testing. A sucker for classes and objects to call private methods.
 
 The component provides access to private  properties of an object / class.
 
+##Changes in versions
+###Версионность.
+x.x.x 
+- первая цифра (основная версия) означает стабильную реализацию. Между версиями существует не совместимость.  
+- вторая цифра (дополнительная версия) означает добавление нового функционала и его изменения.  
+  Между версиями существет несовместимость в нововведениях. Но функционал и API основной версии сохраняется.
+- третья цифра (корректировочная версия)  Между версиями существует совместимость. 
+  Доработка придыдущей версии, работа над ошибками. Приведение функционала к стабильности.
+- alpha beta relise - стадии тестирования  основной версии. 
+
+### Измения
+* 0.1.0
+  - Passing arguments by reference and returning results by reference.
+  - добавлены методы Sucker::apply и Sucker::setRef  
+  - Due to passing variables by reference,The functionality of passing arguments via unpacking (operator ...) has been replaced with passing arguments in an array.
+    Это справедливо для методов Sucker::run, Sucker::sbox, Sucker::sanbox, Sucker::apply,
+    метод Sucker::run теперь protected. 
+    
+
 ## Implementation basis
 
 Component Implements the following concept of accessing private properties :

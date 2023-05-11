@@ -8,10 +8,10 @@ class SuckerData
     public string $action;
     public array $arguments = [];
 
-    public function __construct(?string $member = null, $action = 'get', ...$args)
+    public function __construct(?string $member = null, $action = 'get', &...$args)
     {
         $this->member = $member;
         $this->action = $action;
-        $this->arguments = $args;
+        $this->arguments = $args;//&
     }
 }

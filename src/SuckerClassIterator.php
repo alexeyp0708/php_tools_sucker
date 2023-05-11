@@ -52,8 +52,9 @@ class SuckerClassIterator implements \Iterator
 
     public function current()
     {
+        $prop=$this->key();
         return $this->sucker->sandbox(function($prop){
             return static::$$prop;
-        },$this->scope,$this->key());
+        },$this->scope,$key);
     }
 }

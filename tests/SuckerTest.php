@@ -3,11 +3,71 @@
 namespace Alpa\Tools\Tests\Sucker;
 
 use Alpa\Tools\Tests\Sucker\Fixtures\MyClass;
+use Alpa\Tools\Tests\Sucker\Fixtures\ChildClass;
+use Alpa\Tools\Tests\Sucker\Fixtures\CoreClass;
 use Alpa\Tools\Tests\Sucker\Fixtures\Sucker;
 use PHPUnit\Framework\TestCase;
 
 class SuckerTest extends TestCase
 {
+    public function test_static_get()
+    {
+        $target = ChildClass::class;
+        $sucker = new Sucker($target);
+        $this->assertSame($sucker->get('private_static_child_prop'), 'private_static_child_prop');
+        $this->assertSame($sucker->get('private_static_prop'), 'private_static_child_prop');
+        $this->assertSame($sucker->get('public_static_prop'), 'public_static_child_prop');
+
+        $this->assertSame($sucker->get(CoreClass::class . '::private_static_core_prop'), 'private_static_core_prop');
+        $this->assertSame($sucker->get(CoreClass::class . '::private_static_prop'), 'private_static_core_prop');
+        $this->assertSame($sucker->get(CoreClass::class . '::public_static_prop'), 'public_static_core_prop');
+
+        // references test 
+        $ref_prop =& $sucker->get(CoreClass::class . '::private_static_prop');
+        $ref_prop_val=$ref_prop;
+        $ref_prop = 'changed';
+        $this->assertSame($sucker->get(CoreClass::class . '::private_static_prop'), 'changed');
+        $this->assertSame($sucker->get('private_static_prop'), 'private_static_child_prop');
+        $ref_prop = $ref_prop_val;        
+        unset($ref_prop);
+        $ref_prop =& $sucker->get('private_static_prop');
+        $ref_prop_val=$ref_prop;
+        $ref_prop = 'changed';
+        $this->assertSame($sucker->get('private_static_prop'), 'changed');
+        $this->assertSame($sucker->get(CoreClass::class . '::private_static_prop'), 'private_static_core_prop');
+        $ref_prop = $ref_prop_val;
+        unset($ref_prop);
+        $this->assertSame($sucker->get('private_static_prop'), 'private_static_child_prop');
+    }
+
+    public function test_get(){}
+    
+    public static function test_static_set(){}
+    
+    public function  test_set(){}
+    
+    public function test_call(){}
+    
+    public static function test_static_call(){}
+    
+    public function test_apply(){}
+    
+    public static function test_static_apply(){}
+ 
+    public function test_each(){}
+    
+    public static function test_static_each(){}
+    
+    public function test_isset(){}
+    
+    public static function test_static_isset(){}
+    
+    public function test_unset(){}
+    
+    public static function test_static_unset(){}
+    
+    public function test_sandbox(){}
+    
     public static function test_sbox()
     {
         $inst = new class () extends MyClass {
@@ -52,6 +112,7 @@ class SuckerTest extends TestCase
         static::assertTrue(!$sucker->isset('property'));
         $self = $this;
         $keys = [];
+
         $sucker->each(function ($key, $value) use ($self, $target, &$keys) {
             $keys[] = $key;
             $self::assertTrue($this === $target);
@@ -64,7 +125,7 @@ class SuckerTest extends TestCase
                 function ($arg) use ($target, $self) {
                     $self::assertTrue($target === $this && get_class($target) === self::class);
                     return $arg;
-                }, null, 'zzz'
+                }, null, ['zzz']
             ) === 'zzz'
         );
     }
@@ -111,7 +172,7 @@ class SuckerTest extends TestCase
                 function ($arg) use ($target, $self) {
                     $self::assertTrue($target === self::class);
                     return $arg;
-                }, null, 'zzz'
+                }, null, ['zzz']
             ) === 'zzz'
         );
     }
