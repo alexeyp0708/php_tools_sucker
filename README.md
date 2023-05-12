@@ -1,4 +1,8 @@
-﻿# Alpa\Tools\Sucker\Sucker
+﻿#Журнал Dev ветки. 
+- добавить возможность добавления замыканий в обект Sucker, которые будут заменять замыкания по умолчанию (-)
+- добавить возможность добавления замыканий через класс.(-)
+- теcns Sucker (-/)
+# Alpa\Tools\Sucker\Sucker
 For unit testing. A sucker for classes and objects to call private methods.
 
 The component provides access to private  properties of an object / class.
@@ -46,7 +50,46 @@ Helper::sanbox(function(...$args){
     return $this->prop;
 },$b,A::class,'argument 1');
 ```
-
+В таком случае нужно запомнить главные правило -
+по умолчанию поведение исполнения методов и доступ к свойствам обьекта будет такое же как в    
+  [\Closure->bindTo](https://www.php.net/manual/ru/closure.bindto.php)
+Пример:
+```php
+<?php
+class A{
+    protected $prop=__CLASS__;
+    protected function method(){
+      return 'A_'.$this->prop;
+    }
+    protected function re_method(){
+      return 'A_'.$this->prop;
+    }
+    private function private_method(){
+      return 'A_'.$this->prop;
+    }
+}
+class B extends A{
+    protected $prop=__CLASS__;
+    protected function re_method(){
+      return 'B_'.$this->prop;
+    }
+    private function private_method(){
+      return 'B_'.$this->prop;
+    }
+}
+$call = function(){
+    var_dump(get_class($this) !== self::class);
+    var_dump(static::class !== self::class);
+    var_dump(get_class($this) === static::class);
+    var_dump($this->prop===B::class);
+    var_dump($this->method() === 'A_'.B::class);
+    var_dump($this->re_method() === 'B_'.B::class);
+    var_dump($this->private_method() === 'A_'.B::class);
+};
+$target=new B;
+$call=$call->bindTo($target,A::class);
+$call();
+```
 ## Getting started
 
 ```php
@@ -70,6 +113,7 @@ $target2=B::class;
 $sucker=new \Alpa\Tools\Sucker\Sucker($target);
 $sucker_static=new \Alpa\Tools\Sucker\Sucker($target2);
 echo $sucker->get('prop');//  'hello'
+// WARNING:
 echo $sucker->get('A::prop');// 'bay'
 echo $sucker_static->get('static_prop');// return 'hello'
 echo $sucker_static->get('A::static_prop');// return 'bay'

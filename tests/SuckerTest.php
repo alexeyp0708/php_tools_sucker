@@ -16,19 +16,42 @@ class SuckerTest extends TestCase
         $sucker = new Sucker($target);
         $this->assertSame($sucker->get('private_static_child_prop'), 'private_static_child_prop');
         $this->assertSame($sucker->get('private_static_prop'), 'private_static_child_prop');
-        $this->assertSame($sucker->get('public_static_prop'), 'public_static_child_prop');
+        $this->assertSame($sucker->get('protected_static_prop'), 'protected_static_child_prop');
 
         $this->assertSame($sucker->get(CoreClass::class . '::private_static_core_prop'), 'private_static_core_prop');
         $this->assertSame($sucker->get(CoreClass::class . '::private_static_prop'), 'private_static_core_prop');
-        $this->assertSame($sucker->get(CoreClass::class . '::public_static_prop'), 'public_static_core_prop');
+        $this->assertSame($sucker->get(CoreClass::class . '::protected_static_prop'), 'protected_static_core_prop');
 
-        // references test 
+     
+    }
+
+    public function test_get()
+    {
+        $target = new ChildClass();
+        $sucker = new Sucker($target);
+
+        $this->assertSame($sucker->get('private_child_prop'), 'private_child_prop');
+        $this->assertSame($sucker->get('private_prop'), 'private_child_prop');
+        $this->assertSame($sucker->get('protected_prop'), 'protected_child_prop');
+
+        $this->assertSame($sucker->get(CoreClass::class . '::private_core_prop'), 'private_core_prop');
+        $this->assertSame($sucker->get(CoreClass::class . '::private_prop'), 'private_core_prop');
+        
+        // передача родительского класса не имеет значения
+        $this->assertSame($sucker->get(CoreClass::class . '::protected_prop'), 'protected_child_prop');
+        
+       
+    }
+    public function test_static_ref_get()
+    {
+        $target = ChildClass::class;
+        $sucker = new Sucker($target);
         $ref_prop =& $sucker->get(CoreClass::class . '::private_static_prop');
         $ref_prop_val=$ref_prop;
         $ref_prop = 'changed';
         $this->assertSame($sucker->get(CoreClass::class . '::private_static_prop'), 'changed');
         $this->assertSame($sucker->get('private_static_prop'), 'private_static_child_prop');
-        $ref_prop = $ref_prop_val;        
+        $ref_prop = $ref_prop_val;
         unset($ref_prop);
         $ref_prop =& $sucker->get('private_static_prop');
         $ref_prop_val=$ref_prop;
@@ -38,33 +61,240 @@ class SuckerTest extends TestCase
         $ref_prop = $ref_prop_val;
         unset($ref_prop);
         $this->assertSame($sucker->get('private_static_prop'), 'private_static_child_prop');
+    }   
+    public function test_ref_get()
+    {
+        $target = new ChildClass();
+        $sucker = new Sucker($target);
+        $ref_prop =& $sucker->get(CoreClass::class . '::private_prop');
+        $ref_prop_val=$ref_prop;
+        $ref_prop = 'changed';
+        $this->assertSame($sucker->get(CoreClass::class . '::private_prop'), 'changed');
+        $this->assertSame($sucker->get('private_prop'), 'private_child_prop');
+        $ref_prop = $ref_prop_val;
+        unset($ref_prop);
+        $ref_prop =& $sucker->get('private_prop');
+        $ref_prop_val=$ref_prop;
+        $ref_prop = 'changed';
+        $this->assertSame($sucker->get('private_prop'), 'changed');
+        $this->assertSame($sucker->get(CoreClass::class . '::private_prop'), 'private_core_prop');
+        $ref_prop = $ref_prop_val;
+        unset($ref_prop);
+        $this->assertSame($sucker->get('private_prop'), 'private_child_prop');
+    }
+    public static function test_static_set()
+    {
+        $target = ChildClass::class;
+        $sucker = new Sucker($target);
+        $buf=$sucker->get('private_static_child_prop');
+        $sucker->set('private_static_child_prop','changed');
+        self::assertSame($sucker->get('private_static_child_prop'), 'changed');
+        $sucker->set('private_static_child_prop',$buf);
+        self::assertSame($sucker->get('private_static_child_prop'),$buf);
+
+        $buf=$sucker->get('protected_static_prop');
+        $sucker->set('protected_static_prop','changed');
+        self::assertSame($sucker->get('protected_static_prop'), 'changed');
+        $sucker->set('protected_static_prop',$buf);
+        self::assertSame($sucker->get('protected_static_prop'), $buf);
+        
+        $buf=$sucker->get(CoreClass::class.'::private_static_core_prop');
+        $sucker->set(CoreClass::class.'::private_static_core_prop','changed');
+        self::assertSame($sucker->get(CoreClass::class.'::private_static_core_prop'), 'changed');
+        $sucker->set(CoreClass::class.'::private_static_core_prop',$buf);
+        self::assertSame($sucker->get(CoreClass::class.'::private_static_core_prop'),$buf);
+
+        $buf=$sucker->get(CoreClass::class.'::protected_static_prop');
+        $sucker->set(CoreClass::class.'::protected_static_prop','changed');
+        self::assertSame($sucker->get(CoreClass::class.'::protected_static_prop'), 'changed');
+        $sucker->set(CoreClass::class.'::protected_static_prop',$buf);
+        self::assertSame($sucker->get(CoreClass::class.'::protected_static_prop'), $buf);
+        
+        $buf=$sucker->get(CoreClass::class.'::protected_static_core_prop');
+        $sucker->set(CoreClass::class.'::protected_static_core_prop','changed');
+        self::assertSame($sucker->get(CoreClass::class.'::protected_static_core_prop'), 'changed');
+        self::assertSame($sucker->get('protected_static_core_prop'), 'changed');
+        $sucker->set(CoreClass::class.'::protected_static_core_prop',$buf);
+        self::assertSame($sucker->get(CoreClass::class.'::protected_static_core_prop'), $buf);
+    }
+    
+    public  function test_set()
+    {
+        $target = new ChildClass;
+        $sucker = new Sucker($target);
+        $buf=$sucker->get('private_child_prop');
+        $sucker->set('private_child_prop','changed');
+        $this->assertSame($sucker->get('private_child_prop'), 'changed');
+        $sucker->set('private_child_prop',$buf);
+        $this->assertSame($sucker->get('private_child_prop'),$buf);
+
+        $buf=$sucker->get('protected_prop');
+        $sucker->set('protected_prop','changed');
+        $this->assertSame($sucker->get('protected_prop'), 'changed');
+        $sucker->set('protected_prop',$buf);
+        $this->assertSame($sucker->get('protected_prop'), $buf);     
+        
+        $buf=$sucker->get(CoreClass::class.'::private_core_prop');
+        $sucker->set(CoreClass::class.'::private_core_prop','changed');
+        $this->assertSame($sucker->get(CoreClass::class.'::private_core_prop'), 'changed');
+        $sucker->set(CoreClass::class.'::private_core_prop',$buf);
+        $this->assertSame($sucker->get(CoreClass::class.'::private_core_prop'),$buf);
+
+        $buf=$sucker->get(CoreClass::class.'::protected_prop');
+        $sucker->set(CoreClass::class.'::protected_prop','changed');
+        $this->assertSame($sucker->get(CoreClass::class.'::protected_prop'), 'changed');
+        $this->assertSame($sucker->get('protected_prop'), 'changed');
+        $sucker->set(CoreClass::class.'::protected_prop',$buf);
+        $this->assertSame($sucker->get(CoreClass::class.'::protected_prop'), $buf);
+        
+        $buf=$sucker->get(CoreClass::class.'::protected_core_prop');
+        $sucker->set(CoreClass::class.'::protected_core_prop','changed');
+        $this->assertSame($sucker->get(CoreClass::class.'::protected_core_prop'), 'changed');
+        $this->assertSame($sucker->get('protected_core_prop'), 'changed');
+        $sucker->set(CoreClass::class.'::protected_core_prop',$buf);
+        $this->assertSame($sucker->get(CoreClass::class.'::protected_core_prop'), $buf);
     }
 
-    public function test_get(){}
+    public static function test_static_setRef()
+    {
+        $target =  ChildClass::class;
+        $sucker = new Sucker($target);
+        // reference test
+        $var='changed';
+        $buf=$sucker->get(CoreClass::class.'::protected_static_prop');
+        $sucker->setRef(CoreClass::class.'::protected_static_prop',$var);
+        self::assertSame($sucker->get(CoreClass::class.'::protected_static_prop'), 'changed');
+        self::assertSame($sucker->get('protected_static_prop'), 'protected_static_child_prop');
+        $var=$buf;
+        self::assertSame($sucker->get(CoreClass::class.'::protected_static_prop'), $buf);
+        //$var2=&$var;
+        unset($var);
+        //xdebug_debug_zval('var2');
+    }    
     
-    public static function test_static_set(){}
+    public  function test_setRef()
+    {
+        $target = new ChildClass;
+        $sucker = new Sucker($target);
+        // reference test
+        $var='changed';
+        $buf=$sucker->get(CoreClass::class.'::protected_prop');
+        $sucker->setRef(CoreClass::class.'::protected_prop',$var);
+        self::assertSame($sucker->get(CoreClass::class.'::protected_prop'), 'changed');
+        self::assertSame($sucker->get('protected_prop'), 'changed');
+        $var=$buf;
+        self::assertSame($sucker->get(CoreClass::class.'::protected_prop'), $buf);
+        //$var2=&$var;
+        unset($var);
+        //xdebug_debug_zval('var2');
+    }
+        
+    public static function test_static_call()
+    {
+        $target = ChildClass::class;
+        $sucker = new Sucker($target);
+        self::assertSame($sucker->call('private_static_child_method'),'private_static_child_method');
+        self::assertSame($sucker->call('private_static_method'),'private_static_child_method');
+        self::assertSame($sucker->call('protected_static_method'),'protected_static_child_method');
+        self::assertSame($sucker->call('static_returns_args','hello','friend'),['hello','friend']);
+
+        self::assertSame($sucker->call(CoreClass::class.'::private_static_core_method'),'private_static_core_method');
+        self::assertSame($sucker->call(CoreClass::class.'::private_static_method'),'private_static_core_method');
+        self::assertSame($sucker->call(CoreClass::class.'::protected_static_method'),'protected_static_core_method');
+    }
     
-    public function  test_set(){}
+    public  function test_call()
+    {
+        $target = new ChildClass;
+        $sucker = new Sucker($target);
+        $this->assertSame($sucker->call('private_child_method'),'private_child_method');
+        $this->assertSame($sucker->call('private_method'),'private_child_method');
+        $this->assertSame($sucker->call('protected_method'),'protected_child_method');
+        $this->assertSame($sucker->call('returns_args','hello','friend'),['hello','friend']);
+
+        $this->assertSame($sucker->call(CoreClass::class.'::private_core_method'),'private_core_method');
+        $this->assertSame($sucker->call(CoreClass::class.'::private_method'),'private_core_method');
+        $this->assertSame($sucker->call(CoreClass::class.'::protected_method'),'protected_child_method');
+    }    
     
-    public function test_call(){}
+    public function test_ref_apply()
+    {
+        $arg='hello';
+        $target = new ChildClass;
+        $sucker = new Sucker($target);
+        $answer=&$sucker->apply('ref_method',[&$arg]);
+        $arg='bay';
+        $this->assertSame($answer,$arg);
+        unset($answer);
+        //xdebug_debug_zval('arg');
+        unset($arg);
+        $arg='hello';
+        $arg2='bay';
+        $answer=&$sucker->apply('return_args_method',[&$arg,&$arg2]);
+        $arg='qwer';
+        $this->assertSame($answer[0],$arg);
+        $arg2='qwer2';
+        $this->assertSame($answer[1],$arg2);
+        unset($answer[0],$answer[1],$arg,$arg1);
+    }
     
-    public static function test_static_call(){}
+    public static function test_static_ref_apply()
+    {
+        $arg='hello';
+        $target = new ChildClass;
+        $sucker = new Sucker($target);
+        $answer=&$sucker->apply('ref_method',[&$arg]);
+        $arg='bay';
+        self::assertSame($answer,$arg);
+        unset($answer);
+        //xdebug_debug_zval('arg');
+        unset($arg);
+    }
     
-    public function test_apply(){}
     
-    public static function test_static_apply(){}
- 
+    public function test_isset(){
+        $target = new ChildClass;
+        $sucker = new Sucker($target);
+        $this->assertTrue($sucker->isset('private_child_prop'));
+        $this->assertTrue(!$sucker->isset('private_core_prop'));
+        $this->assertTrue(!$sucker->isset('no_prop'));
+
+        $this->assertTrue(!$sucker->isset(CoreClass::class.'::private_child_prop'));
+        $this->assertTrue($sucker->isset(CoreClass::class.'::private_core_prop'));
+        $this->assertTrue(!$sucker->isset(CoreClass::class.'::no_prop'));
+    }
+    
+    public static function test_static_isset()
+    {
+        $target = ChildClass::class;
+        $sucker = new Sucker($target);
+        self::assertTrue($sucker->isset('private_static_child_prop'));
+        self::assertTrue(!$sucker->isset('private_static_core_prop'));
+        self::assertTrue(!$sucker->isset('no_prop'));
+
+        self::assertTrue(!$sucker->isset(CoreClass::class.'::private_static_child_prop'));
+        self::assertTrue($sucker->isset(CoreClass::class.'::private_static_core_prop'));
+        self::assertTrue(!$sucker->isset(CoreClass::class.'::no_prop'));
+    }
+    
+    public function test_unset()
+    {
+        $target = new ChildClass;
+        $sucker = new Sucker($target);
+        $sucker->unset('private_child_prop');
+        $this->assertTrue(!$sucker->isset('private_child_prop'));
+    }
+    
+    public static function test_static_unset()
+    {
+        $target = ChildClass::class;
+        $sucker = new Sucker($target);
+        $sucker->unset('private_static_child_prop');
+    }
+    
     public function test_each(){}
-    
+
     public static function test_static_each(){}
-    
-    public function test_isset(){}
-    
-    public static function test_static_isset(){}
-    
-    public function test_unset(){}
-    
-    public static function test_static_unset(){}
     
     public function test_sandbox(){}
     

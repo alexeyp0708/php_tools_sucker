@@ -62,7 +62,7 @@ class Sucker
         $target = !is_string($target) ? $target : null;
         $call = $call->bindTo($target, $slaveClass);
         self::refNoticeErrorHandler();
-        $answer=&$call(...$args);
+        $answer=& $call(...$args);
         restore_error_handler();
         return $answer;
     }
@@ -140,10 +140,12 @@ class Sucker
                 return self::$$member;
             },
             'set' => function (string $member, &$value): void {
-                $this->$member = $value;
+                $this->$member = &$value;
+                //  we secure ourselves and destroy additional reference
+                //unset($value);
             },
             'static_set' => function (string $member, &$value): void {
-                self::$$member = $value;
+                self::$$member = &$value;
             },
             'unset' => function (string $member): void {
                 unset($this->$member);
