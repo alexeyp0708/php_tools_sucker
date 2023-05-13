@@ -7,13 +7,13 @@ class ChildClass extends CoreClass
     private $private_child_prop = 'private_child_prop';
     private $private_prop = 'private_child_prop';
     public $public_prop = 'public_child_prop';
-    public $protected_prop = 'protected_child_prop';
+    protected $protected_prop = 'protected_child_prop';
     public $public_child_prop = 'public_child_prop';
 
     public static $public_static_prop = 'public_static_child_prop';
     public static $protected_static_prop = 'protected_static_child_prop';
     public static $public_static_child_prop = 'public_static_child_prop';
-    public static $protected_static_child_prop = 'protected_static_child_prop';
+    protected static $protected_static_child_prop = 'protected_static_child_prop';
     private static $private_static_prop = 'private_static_child_prop';
     private static $private_static_child_prop = 'private_static_child_prop';
 

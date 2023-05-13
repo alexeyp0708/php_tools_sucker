@@ -162,27 +162,28 @@ class Sucker
             },
             'each' => function (?string $member, \Closure $each) {
                 $each = $each->bindTo($this, self::class); 
-                foreach ($this as $key => $value) {
+                foreach ($this as $key => & $value) {
                     if (true === $each($key, $value)) {
                         break;
                     };
                 }
+                unset($value);
             },
-            'static_each' => function (?string $member, callable $each) {
+            'static_each' => function (?string $member, \Closure $each) {
                 $each = $each->bindTo(null, self::class);
                 $vars = (new \ReflectionClass(self::class))->getStaticProperties();
-                foreach ($vars as $key => $value) {
+                foreach ($vars as $key => & $value) {
+                    $value = & self::$$key;
                     if (true === $each($key, $value)) {
                         break;
                     };
                 }
+                unset($value);
             },
             'call' => function & ($member, &...$args) {
-                // Notice: Only variables should be assigned by reference - drown out
                 return $this->$member(...$args);
             },
             'static_call' => function & ($member, &...$args) {
-                // Notice: Only variables should be assigned by reference - drown out
                 return self::{$member}(...$args);
             },
             /*'sandbox'=>function($member=null,\Closure $call,...$args){
