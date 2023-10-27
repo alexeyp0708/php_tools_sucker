@@ -23,6 +23,11 @@ class B extends A{
     public function getVar(){
         return $this->var;
     }
+    private $qwer='qwer';
+    private function & method_ref_prop()
+    {
+        return $this->qwer;
+    }
 };
 $target=new B();
 $target2=B::class;
@@ -98,12 +103,14 @@ $sucker->each(function($key,$value){
 
 $sucker->each(function($key,&$value){
     echo $key .' => '.$value; // prop => hello
+    echo "\n";
     if ($key==='prop'){
         $value='HELLO';
     }
 
 }); // void;
 echo $sucker->get('prop');
+echo "\n";
 $sucker->set('prop','hello');
 // unset member
 $sucker->unset('prop'); // void;
@@ -111,5 +118,18 @@ $sucker->unset('prop'); // void;
 //echo $sucker->get('prop');
 //echo $sucker->get('var');
 
+unset($var);
+$proxy = new \Alpa\Tools\Sucker\Proxy($target);
+$var=&$proxy->method_ref_prop();
+echo $var;
+echo "\n";
+$var='QWER';
+echo $proxy->method_ref_prop();
+echo "\n";
+unset($var);
+$var = & $proxy->qwer;
 
-
+$var='asdf';
+echo $proxy->qwer;
+echo "\n";
+echo "\n";

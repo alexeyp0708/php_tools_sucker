@@ -22,7 +22,7 @@ final class Proxy extends CoreProxy
      */
     protected function & run(string $action, ?string $prop = null, $value_or_arguments = null)
     {
-        $result = parent::run($action, $prop, $value_or_arguments);
+        $result = & parent::run($action, $prop, $value_or_arguments);
         $this->handlers->restoreDefaultScope();
         return $result;
     }

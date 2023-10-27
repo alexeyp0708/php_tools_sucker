@@ -1,5 +1,5 @@
 ﻿# Alpa\Tools\Sucker\Sucker
-For unit testing. A sucker for classes and objects to call private methods.
+For unit testing. The sucker for classes and objects to call private methods.
 
 The component provides access to private  properties of an object / class.
 
