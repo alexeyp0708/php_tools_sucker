@@ -1,6 +1,6 @@
 {
   "name": "alpa/tools_sucker",
-  "description": "For unit testing. A sucker for classes and objects to call private methods.",
+  "description": "For unit testing. The sucker for classes and objects to call private methods.",
   "minimum-stability": "stable",
   "license": "MIT",
   "authors": [
