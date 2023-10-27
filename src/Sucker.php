@@ -77,7 +77,7 @@ class Sucker
      * @param array $args
      * @return mixed
      */
-    protected function & run($action, ?string $member = null, $args = [])
+    public function & run($action, ?string $member = null, $args = [])
     {
         if (empty(static::$actions)) {
             static::initActions();
@@ -114,14 +114,20 @@ class Sucker
     {
         $prev_handler_error = null;
         $prev_handler_error = set_error_handler(function (...$args) use (&$prev_handler_error, $prev_restore) {
-            if ($args[0] == 8) {
-                if ($prev_restore) {
-                    restore_error_handler();
-                }
+
+            if (in_array($args[1],[
+                'Only variables should be assigned by reference',
+                'Only variable references should be returned by reference'])) {
                 return true;
             }
-            return $prev_handler_error($args);
-        }, E_NOTICE);
+            if(!is_null($prev_handler_error)){
+                $answer=$prev_handler_error(...$args);
+                if(is_bool($answer)){
+                    return $answer;
+                }
+            }
+            return false;
+        }, E_NOTICE|E_WARNING);
     }
 
     /**
@@ -134,17 +140,45 @@ class Sucker
         }
         static::$actions = (object)[
             'get' => function & (string $member) {
+                $error_msg='';
+                $error_code=0;
+                $handler=set_error_handler(function (...$args) use (&$error_msg,&$error_code) {
+                    if(substr($args[1],0,19)==='Undefined property:'){
+                        $bt=debug_backtrace()[3];
+                        $error_msg=$args[1].' in '.$bt['file'] .' on line '. $bt['line']."\n";
+                        $error_code=$args[0];
+                        return true;
+                    }
+                    return false;
+                },E_NOTICE|E_WARNING);
+                $res=$this->$member;
+                restore_error_handler();
+                //For some reason, the restored handler does not run when trigger_error
+                if($error_code>0) {
+                    if($handler!==null){set_error_handler($handler);} // forcefully restore an error handler
+                    trigger_error($error_msg,$error_code===E_NOTICE?E_USER_NOTICE:E_USER_WARNING);
+                    if($handler!==null){restore_error_handler();}
+                    return $res;
+                }
                 return $this->$member;
             },
             'static_get' => function & (string $member) {
                 return self::$$member;
             },
-            'set' => function (string $member, &$value): void {
+            'set' => function (string $member, $value): void {
+                $this->$member = $value;
+                //  we secure ourselves and destroy additional reference
+                //unset($value);
+            },
+            'setRef' => function (string $member, &$value): void {
                 $this->$member = &$value;
                 //  we secure ourselves and destroy additional reference
                 //unset($value);
             },
-            'static_set' => function (string $member, &$value): void {
+            'static_set' => function (string $member, $value): void {
+                self::$$member = $value;
+            },
+            'static_setRef' => function (string $member, &$value): void {
                 self::$$member = &$value;
             },
             'unset' => function (string $member): void {
@@ -263,7 +297,7 @@ class Sucker
      */
     public function setRef(string $member, &$value): void
     {
-        $this->run('set', $member, [&$value]);
+        $this->run('setRef', $member, [&$value]);
     }
 
     /**

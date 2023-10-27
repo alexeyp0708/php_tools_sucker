@@ -20,7 +20,7 @@ final class Proxy extends CoreProxy
     /**
      * @inheritDoc
      */
-    protected function run(string $action, ?string $prop = null, $value_or_arguments = null)
+    protected function & run(string $action, ?string $prop = null, $value_or_arguments = null)
     {
         $result = parent::run($action, $prop, $value_or_arguments);
         $this->handlers->restoreDefaultScope();
@@ -32,7 +32,7 @@ final class Proxy extends CoreProxy
      * @param ...$arguments string $arguments[0]- parent class name . The scope of the object.
      * @return $this|mixed
      */
-    public function __invoke(...$arguments)
+    public function & __invoke(...$arguments)
     {
         $scope = $arguments[0];
         $this->handlers->setScope($scope);

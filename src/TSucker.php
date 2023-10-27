@@ -34,6 +34,6 @@ trait TSucker
             $data = new SuckerData(...$args);
         }
         $sucker = new Sucker($this);
-        return $sucker->run($data->action, $data->member, ...$data->arguments);
+        return $sucker->run($data->action, $data->member, $data->arguments);
     }
 }

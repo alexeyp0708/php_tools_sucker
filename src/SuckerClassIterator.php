@@ -55,6 +55,6 @@ class SuckerClassIterator implements \Iterator
         $prop=$this->key();
         return $this->sucker->sandbox(function($prop){
             return static::$$prop;
-        },$this->scope,$key);
+        },$this->scope,[$prop]);
     }
 }

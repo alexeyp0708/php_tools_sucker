@@ -56,6 +56,6 @@ class SuckerIterator implements \Iterator
     {
         return $this->sucker->sandbox(function($prop){
             return $this->$prop;
-        },$this->scope,$this->key());
+        },$this->scope,[$this->key()]);
     }
 }

@@ -5,7 +5,7 @@ namespace Alpa\Tools\Sucker;
 use Alpa\Tools\ProxyObject\Handlers\InstanceActions;
 use Alpa\Tools\ProxyObject\Proxy;
 
-class SuckerHandlers  extends InstanceActions implements HandlersInterface //Alpa\Tools\ProxyObject\Handlers\IContract
+class SuckerHandlers  extends InstanceActions implements HandlersInterface 
 {
     private string $scope;
     private string $default_scope;
@@ -64,7 +64,7 @@ class SuckerHandlers  extends InstanceActions implements HandlersInterface //Alp
         return $this->$action($target,$prop,$value_or_args,$proxy);
     }*/
 
-    public  function get($target, string $prop, $value_or_args, Proxy $proxy)
+    public  function & get($target, string $prop, $value_or_args, Proxy $proxy)
     {
         $scope=$this->getScope();
         if($scope!==null){
@@ -98,7 +98,7 @@ class SuckerHandlers  extends InstanceActions implements HandlersInterface //Alp
         }
         $this->sucker->unset($prop);
     }
-    public function call($target, string $prop, $value_or_args, Proxy $proxy)
+    public function & call($target, string $prop, $value_or_args, Proxy $proxy)
     {
         $scope=$this->getScope();
         if($scope!==null){

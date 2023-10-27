@@ -48,7 +48,9 @@ class ProxyTest extends TestCase
             'public_prop' => 'public_subchild_prop',
             'public_subchild_prop' => 'public_subchild_prop',
             'public_child_prop' => 'public_child_prop',
-            'public_core_prop' => 'public_core_prop'
+            'public_core_prop' => 'public_core_prop',
+            'protected_prop' => 'protected_child_prop'
+
         ];
         $actual = [];
         foreach ($proxy as $key => $value) {
@@ -64,7 +66,8 @@ class ProxyTest extends TestCase
             'public_prop' => 'public_subchild_prop',
             'public_subchild_prop' => 'public_subchild_prop',
             'public_child_prop' => 'public_child_prop',
-            'public_core_prop' => 'public_core_prop'
+            'public_core_prop' => 'public_core_prop',
+            'protected_prop' => 'protected_child_prop'
         ];
         $actual = [];
         foreach ($proxy(Fixtures\CoreClass::class) as $key => $value) {
@@ -96,9 +99,11 @@ class ProxyTest extends TestCase
         $this->assertTrue($proxy(Fixtures\ChildClass::class)->public_static_prop === 'public_static_child_prop');
         $this->assertTrue($proxy->public_static_prop === 'public_static_subchild_prop');
         //set
+        $buf=$proxy(Fixtures\CoreClass::class)->private_static_prop;
         $proxy(Fixtures\CoreClass::class)->private_static_prop = 'private_static_core_prop_changed';
         $this->assertTrue($target::getPrivateStaticProp() === 'private_static_core_prop_changed');
-        //call
+        $proxy(Fixtures\CoreClass::class)->private_static_prop = $buf;
+            //call
         $this->assertTrue($proxy->private_static_method() === 'private_static_subchild_method');
         $this->assertTrue($proxy(Fixtures\ChildClass::class)->private_static_method() === 'private_static_child_method');
         $this->assertTrue($proxy(Fixtures\CoreClass::class)->private_static_method() === 'private_static_core_method');
@@ -114,7 +119,11 @@ class ProxyTest extends TestCase
             'public_static_prop' => 'public_static_subchild_prop',
             'public_static_subchild_prop' => 'public_static_subchild_prop',
             'public_static_child_prop' => 'public_static_child_prop',
-            'public_static_core_prop' => 'public_static_core_prop'
+            'public_static_core_prop' => 'public_static_core_prop',
+            'protected_static_child_prop' => 'protected_static_child_prop',
+            'protected_static_core_prop' => 'protected_static_core_prop',
+            'protected_static_prop' => 'protected_static_child_prop'
+
         ];
         $actual = [];
         foreach ($proxy as $key => $value) {
@@ -125,10 +134,13 @@ class ProxyTest extends TestCase
         $this->assertEquals($expected, $actual);
 
         $expected = [
-            'private_static_prop'=>'private_static_core_prop_changed',
+            'private_static_prop'=>'private_static_core_prop',
             'private_static_core_prop' => 'private_static_core_prop',
             'public_static_prop' => 'public_static_core_prop',
-            'public_static_core_prop' => 'public_static_core_prop'
+            'public_static_core_prop' => 'public_static_core_prop',
+            'protected_static_core_prop' => 'protected_static_core_prop',
+            'protected_static_prop' => 'protected_static_core_prop'
+
         ];
         $actual = [];
         foreach ($proxy(Fixtures\CoreClass::class) as $key => $value) {
@@ -138,6 +150,8 @@ class ProxyTest extends TestCase
         ksort($actual);
         $this->assertEquals($expected, $actual);
         
-        var_dump(get_object_vars($proxy));
+        //var_dump(get_object_vars($proxy));
     }
+    
+    public function test_references(){}
 }

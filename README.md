@@ -1,29 +1,17 @@
-﻿#Журнал Dev ветки. 
-- добавить возможность добавления замыканий в обект Sucker, которые будут заменять замыкания по умолчанию (-)
-- добавить возможность добавления замыканий через класс.(-)
-- теcns Sucker (-/)
-# Alpa\Tools\Sucker\Sucker
+﻿# Alpa\Tools\Sucker\Sucker
 For unit testing. A sucker for classes and objects to call private methods.
 
 The component provides access to private  properties of an object / class.
 
 ##Changes in versions
-###Версионность.
-x.x.x 
-- первая цифра (основная версия) означает стабильную реализацию. Между версиями существует не совместимость.  
-- вторая цифра (дополнительная версия) означает добавление нового функционала и его изменения.  
-  Между версиями существет несовместимость в нововведениях. Но функционал и API основной версии сохраняется.
-- третья цифра (корректировочная версия)  Между версиями существует совместимость. 
-  Доработка придыдущей версии, работа над ошибками. Приведение функционала к стабильности.
-- alpha beta relise - стадии тестирования  основной версии. 
 
-### Измения
-* 0.1.0
-  - Passing arguments by reference and returning results by reference.
-  - добавлены методы Sucker::apply и Sucker::setRef  
+### Versions
+* 0.0.3  (Warn: No backward compatibility)
+  - Passing arguments by reference and returning results by reference for Sucker object.
+  - Returning results by reference for Proxy object
+  - Methods added Sucker::apply и Sucker::setRef  
   - Due to passing variables by reference,The functionality of passing arguments via unpacking (operator ...) has been replaced with passing arguments in an array.
-    Это справедливо для методов Sucker::run, Sucker::sbox, Sucker::sanbox, Sucker::apply,
-    метод Sucker::run теперь protected. 
+    This applies to  Sucker::run, Sucker::sbox, Sucker::sanbox, Sucker::apply methods
     
 
 ## Implementation basis
@@ -50,10 +38,10 @@ Helper::sanbox(function(...$args){
     return $this->prop;
 },$b,A::class,'argument 1');
 ```
-В таком случае нужно запомнить главные правило -
-по умолчанию поведение исполнения методов и доступ к свойствам обьекта будет такое же как в    
+In this case, you need to remember the main rules -
+by default, the execution behavior of methods and access to object properties will be the same as in
   [\Closure->bindTo](https://www.php.net/manual/ru/closure.bindto.php)
-Пример:
+Example:
 ```php
 <?php
 class A{
@@ -90,6 +78,7 @@ $target=new B;
 $call=$call->bindTo($target,A::class);
 $call();
 ```
+
 ## Getting started
 
 ```php
@@ -100,55 +89,112 @@ class A{
     private function method(){
         return 'bay';
     }
+    
 };
 class B extends A{
     private $prop='hello';
     private static $static_prop='hello';
-     private function method(){
+    private function method(){
         return 'hello';
+    }
+    private function & method_reference(&$arg){
+        return $arg;
     }
 };
 $target=new B();
 $target2=B::class;
 $sucker=new \Alpa\Tools\Sucker\Sucker($target);
 $sucker_static=new \Alpa\Tools\Sucker\Sucker($target2);
+
+// returns value properties
 echo $sucker->get('prop');//  'hello'
-// WARNING:
 echo $sucker->get('A::prop');// 'bay'
+
+// returns value static properties
 echo $sucker_static->get('static_prop');// return 'hello'
 echo $sucker_static->get('A::static_prop');// return 'bay'
 
+// returns by reference
+$var= & $sucker->get('prop');// hello
+$var='HELLO';
+echo $sucker->get('prop');// HELLO
+$var='hello';// value restore
+unset($var);
+
+$var= & $sucker->get('A::prop');// bay
+$var='BAY';
+echo $sucker->get('A::prop');// BAY
+$var='bay';// value restore
+unset($var);
+
+
+// call methods
 echo $sucker->call('method');// 'hello' 
 echo $sucker->call('A::method');// 'bay' 
 
+//  apply methods (test references)
+$test='test';
+$result=& $sucker->apply('method_reference',[&$test]);
+$test='TEST';
+echo $result.'=='.$test; // TEST == TEST
+
+// set value properties
+$sucker->set('prop','other hello');// void;
+
+// set value properties by reference
+
 $value='other hello';
-$sucker->set('prop',$value);// void;
+$sucker->setRef('prop',$value);// void;
+$value='OTHER HELLO';
+echo $sucker->get('prop');//'OTHER HELLO'
+echo "\n";
+unset($value);
+$sucker->set('prop','hello');
+
+// isset member
 echo $sucker->isset('prop'); // true;
+
+// unset member
 $sucker->unset('prop'); // void;
+//echo $sucker->get('prop'); //  Undefined property: B::$prop
+
+//for each
 $sucker->each(function($key,$value){
     echo $key .' => '.$value; // prop => hello
 }); // void;
+
 $sucker->each(function($key,$value){
     echo $key .' => '.$value; // prop => bay
+    // return true; // BREAK;
 },'A'); // void;
 
+// each by reference
+$sucker->each(function($key,&$value){
+    echo $key .' => '.$value; // prop => hello
+    if ($key==='prop'){
+        $value='HELLO';    
+    }
+    
+}); // void;
+echo $sucker->get('prop');
 $result= $sucker->sandbox(function(...$args){
-    // $args===['Hello','Bay'];
-    // $this===$target
-    // self::class === B::class //get_class($target);
+    // $args=>['Hello','Bay'];
+    // $this=>$target
+    // self::class => B::class //get_class($target);
     //your code
     // return your result
 },null,'Hello','Bay');
 
+// sanbox
 $result= $sucker->sandbox(function(...$args){
-    // $args===['Hello','Bay'];
-    // $this===$target
+    // $args=>['Hello','Bay'];
+    // $this=>$target
     // $this surrounded by A class
-    // self::class === A::class;
+    // self::class => A::class;
     // your code
     // return your result
 },'A','Hello','Bay');
-or 
+//or 
 $result =\Alpa\Tools\Sucker\Sucker::sbox(function(...$args){
 
 },$target,A::class,'arg1','arg2');
