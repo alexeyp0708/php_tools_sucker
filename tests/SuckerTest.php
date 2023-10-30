@@ -81,6 +81,29 @@ class SuckerTest extends TestCase
         $ref_prop = $ref_prop_val;
         unset($ref_prop);
         $this->assertSame('private_child_prop', $sucker->get('private_prop'));
+
+        $check=false;
+        set_error_handler(function(...$args) use (&$check){
+            if(substr($args[1],0,18)==='Undefined property'){
+                $check=true;
+                return true;
+            }
+            return false;
+        },E_USER_WARNING|E_USER_NOTICE);
+        $sucker->get(CoreClass::class . '::protected_core_prop');
+        restore_error_handler();
+        $this->assertTrue($check,'Test for generating an error when a property is missing');
+        $check=false;
+        set_error_handler(function(...$args) use (&$check){
+            if(substr($args[1],0,18)==='Undefined property'){
+                $check=true;
+                return true;
+            }
+            return false;
+        },E_USER_WARNING|E_USER_NOTICE);
+        $sucker->get(CoreClass::class . '::protected_core_prop');
+        restore_error_handler();
+        $this->assertTrue($check,'We check whether the property was not created after checking for absence');
     }
 
     public static function test_static_set()
@@ -147,28 +170,7 @@ class SuckerTest extends TestCase
         $this->assertSame('changed', $sucker->get('protected_prop'));
         $sucker->set(CoreClass::class . '::protected_prop', $buf);
         $this->assertSame($buf, $sucker->get(CoreClass::class . '::protected_prop'));
-        $check=false;
-        set_error_handler(function(...$args) use (&$check){
-            if(substr($args[1],0,18)==='Undefined property'){
-                $check=true;
-                return true;
-            }
-            return false;
-        },E_USER_WARNING|E_USER_NOTICE);
-        $sucker->get(CoreClass::class . '::protected_core_prop');
-        restore_error_handler();
-        $this->assertTrue($check,'Test for generating an error when a property is missing');
-        $check=false;
-        set_error_handler(function(...$args) use (&$check){
-            if(substr($args[1],0,18)==='Undefined property'){
-                $check=true;
-                return true;
-            }
-            return false;
-        },E_USER_WARNING|E_USER_NOTICE);
-        $sucker->get(CoreClass::class . '::protected_core_prop');
-        restore_error_handler();
-        $this->assertTrue($check,'We check whether the property was not created after checking for absence');
+
         set_error_handler(function(...$args) use (&$check){
             var_dump($args[1]);
         },E_DEPRECATED);
@@ -176,6 +178,7 @@ class SuckerTest extends TestCase
         
         // As of PHP 8.2, adding dynamic properties is deprecated
         //  deprecated start
+        //????
         $sucker->set(CoreClass::class . '::protected_core_prop', 'changed'); 
        
         $this->assertSame('changed', $sucker->get(CoreClass::class . '::protected_core_prop'));

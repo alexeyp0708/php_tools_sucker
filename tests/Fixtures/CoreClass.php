@@ -6,9 +6,9 @@ class CoreClass
 {
     private $private_core_prop='private_core_prop';
     private $private_prop='private_core_prop';
+    protected $protected_prop='protected_core_prop';
     public $public_prop='public_core_prop';
     public $public_core_prop='public_core_prop';
-    protected $protected_prop='protected_core_prop';
     
     public static $public_static_prop='public_static_core_prop';
     public static $public_static_core_prop='public_static_core_prop';

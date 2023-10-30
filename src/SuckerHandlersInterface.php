@@ -6,7 +6,7 @@ namespace Alpa\Tools\Sucker;
 
 interface SuckerHandlersInterface
 {
-    public function setSubject($subject):void;
+    public function setSubject($subject):self;
     
     public function getSubject($subject);
 
@@ -24,5 +24,5 @@ interface SuckerHandlersInterface
     
     public function unset(string $member):void;
     
-    public function & sandbox(callable $call,$args);
+    public function & sandbox(\Closure $call,$args);
 }

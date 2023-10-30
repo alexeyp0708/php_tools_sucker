@@ -26,7 +26,7 @@ class Sucker
         $this->target = $target;
         if ($handlers === null) {
             if (!is_string($target)) {
-                $handlers = new SuckerHandlers();
+                $handlers = new SuckerObjectHandlers();
             } else {
                 $handlers = new SuckerClassHandlers();
             }

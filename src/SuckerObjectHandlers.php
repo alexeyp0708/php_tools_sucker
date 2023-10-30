@@ -4,16 +4,16 @@
 namespace Alpa\Tools\Sucker;
 
 
-class SuckerClassHandlers implements SuckerHandlersInterface
+class SuckerObjectHandlers  implements SuckerHandlersInterface
 {
-    private string $subject;
+    private object $subject;
     private ?string $scope = null;
     private string $selfClass;
 
     final public function setSubject($subject): self
     {
         $this->subject = $subject;
-        $this->selfClass = $subject;
+        $this->selfClass = get_class($subject);
         return $this;
     }
 
@@ -30,45 +30,44 @@ class SuckerClassHandlers implements SuckerHandlersInterface
 
     final public function & get(string $member)
     {
-        $call = (SuckerActions::getAction('get',true))->bindTo(null, $this->scope ?? $this->selfClass);
+        $call = (SuckerActions::getAction('get'))->bindTo($this->subject, $this->scope ?? $this->selfClass);
         return $call($member);
     }
 
     public function set(string $member, &$value): void
     {
-        $call = (SuckerActions::getAction('set',true))->bindTo(null, $this->scope ?? $this->selfClass);
+        $call = (SuckerActions::getAction('set'))->bindTo($this->subject, $this->scope ?? $this->selfClass);
         $call($member,$value);
     }
 
     public function & call($member, &...$args)
     {
-        $call = (SuckerActions::getAction('call',true))->bindTo(null, $this->scope ?? $this->selfClass);
+        $call = (SuckerActions::getAction('call'))->bindTo($this->subject, $this->scope ?? $this->selfClass);
         return $call($member, ...$args);
     }
 
     public function each(callable $each): void
     {
-        $each=$each->bindTo(null, $this->scope ?? $this->selfClass);
-        $call = (SuckerActions::getAction('each',true))->bindTo(null, $this->scope ?? $this->selfClass);
+        $each=$each->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        $call = (SuckerActions::getAction('each'))->bindTo($this->subject, $this->scope ?? $this->selfClass);
         $call($each);
     }
 
     public function isset($member): bool
     {
-        $call = (SuckerActions::getAction('isset',true))->bindTo(null, $this->scope ?? $this->selfClass);
+        $call = (SuckerActions::getAction('isset'))->bindTo($this->subject, $this->scope ?? $this->selfClass);
         return $call($member);
     }
 
     public function unset($member): void
     {
-        $call = (SuckerActions::getAction('unset',true))->bindTo(null, $this->scope ?? $this->selfClass);
+        $call = (SuckerActions::getAction('unset'))->bindTo($this->subject, $this->scope ?? $this->selfClass);
         $call($member);
     }
 
     public function & sandbox(\Closure $call, $args)
     {
-        $call = $call->bindTo(null, $this->scope ?? $this->selfClass);
-        
+        $call = $call->bindTo($this->subject, $this->scope ?? $this->selfClass);
         if ((new \ReflectionFunction($call))->returnsReference()) {
             $answer = &$call(...$args);
         } else {
