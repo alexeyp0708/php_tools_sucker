@@ -1,119 +1,134 @@
 <?php
 
+
 namespace Alpa\Tools\Sucker;
 
-use Alpa\Tools\ProxyObject\Handlers\InstanceActions;
-use Alpa\Tools\ProxyObject\Proxy;
 
-class SuckerHandlers  extends InstanceActions implements HandlersInterface 
+class SuckerHandlers implements SuckerHandlersInterface
 {
-    private string $scope;
-    private string $default_scope;
-    private Sucker $sucker;
-    public function __construct($target,string $scope=null)
+    private object $subject;
+    private ?string $scope = null;
+    private string $selfClass;
+
+    final public function setSubject($subject): void
     {
-        if($scope===null){
-            if (is_string($target)) {
-                $scope=$target;
-            } else if(is_object($target)) {
-                $scope=get_class($target);
-            }
-        }
-        $this->sucker=new Sucker($target);
-        $this->setScope($scope);
-        $this->initDefaultScope();
-    }
-    
-    public function setScope(string $scope):void
-    {
-        $scope!==null && class_exists($scope);
-        $this->scope=$scope;
+        $this->subject = $subject;
+        $this->selfClass = get_class($subject);
     }
 
-    public function getScope():string
+    final public function getSubject($subject): object
     {
-        return $this->scope;
+        return $this->subject;
     }
-    public function initDefaultScope():void
+
+    final public function setScope(?string $class): self
     {
-        $this->default_scope=$this->scope;
+        $this->scope = $class;
+        return $this;
     }
-    public function restoreDefaultScope():void
+
+    final public function & get(string $member)
     {
-        $this->scope=$this->default_scope;
-    }
-/*    public function run (string $action, $target, ?string $prop, $value_or_args, Proxy $proxy)
-    {
-        if (!in_array($action, ['get', 'set', 'isset', 'unset', 'call', 'toString', 'iterator'])) {
-            throw new \Exception('Action must be one of the values "get|set|isset|unset|call|toString|iterator"');
-        }
-        $scope=$this->getScope();
-        if($scope!==null){
-            $prop=$scope.'::'.$prop;
-        }
-        if(in_array($action,['get','set','call','isset','unset'])){
-            if(!is_array($value_or_args)){
-                if($value_or_args===null && $action!=='set'){
-                    $value_or_args=[];
-                } else {
-                    $value_or_args=[$value_or_args];
+        $call = (function & ($member) {
+            $error_msg = '';
+            $error_code = 0;
+            $handler = set_error_handler(function (...$args) use (&$error_msg, &$error_code) {
+                if (substr($args[1], 0, 19) === 'Undefined property:') {
+                    $bt = debug_backtrace()[3];
+                    $error_msg = $args[1] . ' in ' . $bt['file'] . ' on line ' . $bt['line'] . "\n";
+                    $error_code = $args[0];
+                    return true;
                 }
+                return false;
+            }, E_NOTICE | E_WARNING);
+            $res = $this->$member;
+            restore_error_handler();
+            //For some reason, the restored handler does not run when trigger_error
+            if ($error_code > 0) {
+                if ($handler !== null) {
+                    set_error_handler($handler);
+                } // forcefully restore an error handler
+                trigger_error($error_msg, $error_code === E_NOTICE ? E_USER_NOTICE : E_USER_WARNING);
+                if ($handler !== null) {
+                    restore_error_handler();
+                }
+                return $res;
             }
-            return $this->sucker->run($action,$prop,...$value_or_args);
-        }
-        return $this->$action($target,$prop,$value_or_args,$proxy);
-    }*/
-
-    public  function & get($target, string $prop, $value_or_args, Proxy $proxy)
-    {
-        $scope=$this->getScope();
-        if($scope!==null){
-            $prop=$scope.'::'.$prop;
-        }
-        return $this->sucker->get($prop);
+            return $this->$member;
+        })->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        return $call($member);
     }
 
-    public  function set($target, string $prop, $value_or_args, Proxy $proxy): void
+    public function set(string $member, &$value): void
     {
-        $scope=$this->getScope();
-        if($scope!==null){
-            $prop=$scope.'::'.$prop;
-        }
-        $this->sucker->set($prop,$value_or_args);
+        $call = (function  ($member,&$value) {
+            $this->$member = &$value;
+        })->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        $call($member,$value);
     }
 
-    public function isset($target, string $prop, $value_or_args, Proxy $proxy):bool
+    public function & call($member, &...$args)
     {
-        $scope=$this->getScope();
-        if($scope!==null){
-            $prop=$scope.'::'.$prop;
-        }
-        return $this->sucker->isset($prop);
+        $call = (function & ($member, &...$args) {
+            if ((new \ReflectionMethod($this, $member))->returnsReference()) {
+                $answer = &$this->$member(...$args);
+            } else {
+                $answer = $this->$member(...$args);
+            }
+            return $answer;
+        })->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        return $call($member, ...$args);
     }
-    public function unset($target, string $prop, $value_or_args, Proxy $proxy):void
+
+    public function each(callable $each): void
     {
-        $scope=$this->getScope();
-        if($scope!==null){
-            $prop=$scope.'::'.$prop;
-        }
-        $this->sucker->unset($prop);
+        $each=$each->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        $call = (function ($each)  {
+            foreach ($this as $key => & $value) {
+                if (true === $each($key, $value)) {
+                    break;
+                };
+            }
+            unset($value);
+        })->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        $call($each);
     }
-    public function & call($target, string $prop, $value_or_args, Proxy $proxy)
+
+    public function isset($member): bool
     {
-        $scope=$this->getScope();
-        if($scope!==null){
-            $prop=$scope.'::'.$prop;
-        }
-        return $this->sucker->call($prop,...$value_or_args);
+        $call = (function ($member) {
+            return isset($this->$member);
+        })->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        return $call($member);
     }
-    public function iterator($target,$prop,$value_or_args,Proxy $proxy):\Iterator
+
+    public function unset($member): void
     {
-        if(is_object($target) && ($target instanceof \IteratorAggregate)){
-            return $target->getIterator();
-        } 
-        if(is_string($target)){
-            return new SuckerClassIterator($this->sucker,$this->scope);
+        $call = (function ($member) {
+            unset($this->$member);
+        })->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        $call($member);
+    }
+
+    public function & sandbox(callable $call, $args)
+    {
+        if (is_array($call)) {
+            $ref = new \ReflectionMethod($call[0], $call[1]);
+            if (is_string($call[0])) {
+                $call = $ref->getClosure();
+            } else {
+                $call = $ref->getClosure($call[0]);
+            }
+        } else if (is_string($call)) {
+            $ref = new \ReflectionFunction($call);
+            $call = $ref->getClosure();
         }
-        return new SuckerIterator($this->sucker,$this->scope);
+        $call = $call->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        if ((new \ReflectionFunction($call))->returnsReference()) {
+            $answer = &$call(...$args);
+        } else {
+            $answer = $call(...$args);
+        }
+        return $answer;
     }
 }

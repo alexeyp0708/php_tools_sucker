@@ -276,7 +276,7 @@ class SuckerTest extends TestCase
         $sucker = new Sucker($target);
         $answer =& $sucker->apply('ref_method', [&$arg]);
         $arg = 'bay';
-        self::assertSame($arg, $answer);
+        self::assertSame( $answer,$arg);
         unset($answer);
         //xdebug_debug_zval('arg');
         unset($arg);
@@ -486,7 +486,8 @@ class SuckerTest extends TestCase
         $sucker->sandbox($func, CoreClass::class, ['hello', 'friend', &$var]);
         $tester->assertSame('rewq',$var );
     }
-
+    public function test_sandbox_by_reference(){}
+    
     public static function test_sbox()
     {
         $inst = new class () extends MyClass {
@@ -586,7 +587,7 @@ class SuckerTest extends TestCase
             $self::assertTrue(self::$$key === $value);
         });
         static::assertSame($keys, ['property', 'property2', 'property3']);
-        static::assertTrue($sucker->call('method', 'zzz') === 'zzz');
+        static::assertSame($sucker->call('method', 'zzz'), 'zzz');
         static::assertTrue($sucker->sandbox(
                 function ($arg) use ($target, $self) {
                     $self::assertTrue($target === self::class);

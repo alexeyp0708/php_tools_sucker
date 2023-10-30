@@ -6,7 +6,7 @@ use Alpa\Tools\ProxyObject\Proxy as CoreProxy;
 
 final class Proxy extends CoreProxy
 {
-    public function __construct($target, string $handlers=SuckerHandlers::class, ?string $scope = null)
+    public function __construct($target, string $handlers=SuckerProxyHandlers::class, ?string $scope = null)
     {
         if (!is_subclass_of($handlers, HandlersInterface::class)
         ) {

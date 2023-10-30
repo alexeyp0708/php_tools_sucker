@@ -10,25 +10,37 @@ class Sucker
 {
     protected static object $actions;
     protected \Closure $runner;
-    protected $target;
-    /*    protected array $options = [
-            'reference' => true
-        ];*/
+    private $target;
+    private SuckerHandlersInterface $handlers;
+    private string $slaveClass;
 
     /**
      * Sucker constructor.
      * @param object|string|null $target If a string is passed, then the class name
      */
-    public function __construct($target = null)//, array $options = []
+    public function __construct($target, ?SuckerHandlersInterface $handlers = null)
     {
-        if (!empty($target)) {
-            $this->init($target);
+
+        $this->target = $target;
+        if ($handlers === null) {
+            if (!is_string($target)) {
+                $handlers= new SuckerHandlers();
+            } else {
+                $handlers= new SuckerClassHandlers();
+            }
         }
-        /*        foreach ($options as $key => $value) {
-                    if ($this->options[$key]) {
-                        $this->options[$key] = $value;
-                    }
-                }*/
+        $this->handlers=$handlers;
+        $handlers->setSubject($target);
+        if(is_string($target)) {
+            $this->slaveClass=$target;
+        } else {
+            $this->slaveClass=get_class($target);
+        }
+    }
+    public function __invoke(string $slaveClass):self
+    {
+        $this->slaveClass=$slaveClass;
+        return $this;
     }
     /*
         public function setOption($key, $value)
@@ -37,15 +49,6 @@ class Sucker
                 $this->options[$key] = $value;
             }
         }*/
-
-    /**
-     * Initializes the target with which it will work. ($this or self in Closure)
-     * @param object|string $target If a string is passed, then the class name
-     */
-    public function init($target)
-    {
-        $this->target = $target;
-    }
 
     /**
      * Static sandbox launch option
@@ -62,11 +65,39 @@ class Sucker
         $target = !is_string($target) ? $target : null;
         $call = $call->bindTo($target, $slaveClass);
         self::refNoticeErrorHandler();
-        $answer=& $call(...$args);
+        $answer =& $call(...$args);
         restore_error_handler();
         return $answer;
     }
 
+
+    public function & run(string $action, ?string $member = null, $args = [])
+    {
+        
+        $slaveClass = !empty($class) ? $class : $this->slaveClass;
+  
+        switch ($action) {
+            case 'get':
+            case 'call':
+            case 'sandbox':
+                $answer = &$this->$action($member,...$args);
+            break;
+            case 'isset':   
+                $answer=$this->$action($member);
+                break;
+            case 'each':
+                $this->$action(...$args);
+                break;
+            case 'set':
+                $this->$action($member,...$args);
+                $answer=null;
+                break;
+            case 'unset':
+                $this->$action($member);
+                $answer=null;
+        }
+        return $answer;
+    }
     /**
      * Run action
      * @param string|\Closure $action
@@ -77,8 +108,9 @@ class Sucker
      * @param array $args
      * @return mixed
      */
-    public function & run($action, ?string $member = null, $args = [])
+    public function & _run($action, ?string $member = null, $args = [])
     {
+        //deprecated
         if (empty(static::$actions)) {
             static::initActions();
         }
@@ -92,22 +124,44 @@ class Sucker
         $isSandbox = false;
         if ($action instanceof \Closure) {
             $isSandbox = true;
+            $call = &$action;
         } else {
             $action = (is_string($this->target) ? 'static_' : '') . $action;
-            $action = static::$actions->$action;
+            $call = static::$actions->$action;
         }
-        $target = !is_string($this->target) ? $this->target : null;
+        $target = is_string($this->target) ? null : $this->target;
         $slaveClass = !empty($class) ? $class : (is_string($this->target) ? $this->target : get_class($this->target));
-        $action = $action->bindTo($target, $slaveClass);
-        self::refNoticeErrorHandler();
-        //working line
-        if($isSandbox){
-            $answer=& $action(...$args);
+        $call = $call->bindTo($target, $slaveClass);
+        //self::refNoticeErrorHandler();
+        // Passing values by reference so PHP doesn't complain
+        $answer = null;
+        if ($isSandbox) {
+            if ((new \ReflectionFunction($call))->returnsReference()) {
+                $answer = &$call(...$args);
+            } else {
+                $answer = $call(...$args);
+            }
         } else {
-            $answer=& $action($name, ...$args);
+            switch ($action) {
+                case 'get':
+                case 'static_get':
+                    $answer = &$call($name);
+                    break;
+                case 'call':
+                case 'static_call':
+                    $answer = &$call($name, ...$args);
+                    break;
+                default:
+                    $answer = $call($name, ...$args);
+            }
         }
-        restore_error_handler();
+        //restore_error_handler();
         return $answer;
+    }
+
+    private static function isReferencesMethod($action)
+    {
+
     }
 
     private static function refNoticeErrorHandler(bool $prev_restore = false)
@@ -115,19 +169,19 @@ class Sucker
         $prev_handler_error = null;
         $prev_handler_error = set_error_handler(function (...$args) use (&$prev_handler_error, $prev_restore) {
 
-            if (in_array($args[1],[
+            if (in_array($args[1], [
                 'Only variables should be assigned by reference',
                 'Only variable references should be returned by reference'])) {
                 return true;
             }
-            if(!is_null($prev_handler_error)){
-                $answer=$prev_handler_error(...$args);
-                if(is_bool($answer)){
+            if (!is_null($prev_handler_error)) {
+                $answer = $prev_handler_error(...$args);
+                if (is_bool($answer)) {
                     return $answer;
                 }
             }
             return false;
-        }, E_NOTICE|E_WARNING);
+        }, E_NOTICE | E_WARNING);
     }
 
     /**
@@ -140,24 +194,28 @@ class Sucker
         }
         static::$actions = (object)[
             'get' => function & (string $member) {
-                $error_msg='';
-                $error_code=0;
-                $handler=set_error_handler(function (...$args) use (&$error_msg,&$error_code) {
-                    if(substr($args[1],0,19)==='Undefined property:'){
-                        $bt=debug_backtrace()[3];
-                        $error_msg=$args[1].' in '.$bt['file'] .' on line '. $bt['line']."\n";
-                        $error_code=$args[0];
+                $error_msg = '';
+                $error_code = 0;
+                $handler = set_error_handler(function (...$args) use (&$error_msg, &$error_code) {
+                    if (substr($args[1], 0, 19) === 'Undefined property:') {
+                        $bt = debug_backtrace()[3];
+                        $error_msg = $args[1] . ' in ' . $bt['file'] . ' on line ' . $bt['line'] . "\n";
+                        $error_code = $args[0];
                         return true;
                     }
                     return false;
-                },E_NOTICE|E_WARNING);
-                $res=$this->$member;
+                }, E_NOTICE | E_WARNING);
+                $res = $this->$member;
                 restore_error_handler();
                 //For some reason, the restored handler does not run when trigger_error
-                if($error_code>0) {
-                    if($handler!==null){set_error_handler($handler);} // forcefully restore an error handler
-                    trigger_error($error_msg,$error_code===E_NOTICE?E_USER_NOTICE:E_USER_WARNING);
-                    if($handler!==null){restore_error_handler();}
+                if ($error_code > 0) {
+                    if ($handler !== null) {
+                        set_error_handler($handler);
+                    } // forcefully restore an error handler
+                    trigger_error($error_msg, $error_code === E_NOTICE ? E_USER_NOTICE : E_USER_WARNING);
+                    if ($handler !== null) {
+                        restore_error_handler();
+                    }
                     return $res;
                 }
                 return $this->$member;
@@ -195,7 +253,7 @@ class Sucker
                 return isset(self::$$member);
             },
             'each' => function (?string $member, \Closure $each) {
-                $each = $each->bindTo($this, self::class); 
+                $each = $each->bindTo($this, self::class);
                 foreach ($this as $key => & $value) {
                     if (true === $each($key, $value)) {
                         break;
@@ -207,7 +265,7 @@ class Sucker
                 $each = $each->bindTo(null, self::class);
                 $vars = (new \ReflectionClass(self::class))->getStaticProperties();
                 foreach ($vars as $key => & $value) {
-                    $value = & self::$$key;
+                    $value = &self::$$key;
                     if (true === $each($key, $value)) {
                         break;
                     };
@@ -215,11 +273,22 @@ class Sucker
                 unset($value);
             },
             'call' => function & ($member, &...$args) {
-                return $this->$member(...$args);
+                if ((new \ReflectionMethod($this, $member))->returnsReference()) {
+                    $answer = &$this->$member(...$args);
+                } else {
+                    $answer = $this->$member(...$args);
+                }
+                return $answer;
             },
             'static_call' => function & ($member, &...$args) {
-                return self::{$member}(...$args);
+                if ((new \ReflectionMethod(self::class, $member))->returnsReference()) {
+                    $answer = &self::{$member}(...$args);
+                } else {
+                    $answer = self::{$member}(...$args);
+                }
+                return $answer;
             },
+
             /*'sandbox'=>function($member=null,\Closure $call,...$args){
                 $call = $call->bindTo($this, self::class);
                 return $call(...$args);
@@ -273,7 +342,15 @@ class Sucker
      */
     public function & get(string $member)
     {
-        return $this->run('get', $member);
+        $name = null;
+        $class = null;
+        if ($member !== null) {
+            $member = self::parseFullName($member);
+            $name = $member->name;
+            $class = $member->class;
+        }
+        $slaveClass = !empty($class) ? $class : $this->slaveClass;
+        return  $this->handlers->setScope($slaveClass)->get($name);
     }
 
     /**
@@ -287,7 +364,15 @@ class Sucker
      */
     public function set(string $member, $value): void
     {
-        $this->run('set', $member, [$value]);
+        $name = null;
+        $class = null;
+        if ($member !== null) {
+            $member = self::parseFullName($member);
+            $name = $member->name;
+            $class = $member->class;
+        }
+        $slaveClass = !empty($class) ? $class : $this->slaveClass;
+        $this->handlers->setScope($slaveClass)->set($name,$value);
     }
 
     /**
@@ -297,7 +382,15 @@ class Sucker
      */
     public function setRef(string $member, &$value): void
     {
-        $this->run('setRef', $member, [&$value]);
+        $name = null;
+        $class = null;
+        if ($member !== null) {
+            $member = self::parseFullName($member);
+            $name = $member->name;
+            $class = $member->class;
+        }
+        $slaveClass = !empty($class) ? $class : $this->slaveClass;
+        $this->handlers->setScope($slaveClass)->set($name,$value);
     }
 
     /**
@@ -310,7 +403,15 @@ class Sucker
      */
     public function isset(string $member): bool
     {
-        return $this->run('isset', $member);
+        $name = null;
+        $class = null;
+        if ($member !== null) {
+            $member = self::parseFullName($member);
+            $name = $member->name;
+            $class = $member->class;
+        }
+        $slaveClass = !empty($class) ? $class : $this->slaveClass;
+        return $this->handlers->setScope($slaveClass)->isset($name);
     }
 
     /**
@@ -322,7 +423,15 @@ class Sucker
      */
     public function unset(string $member): void
     {
-        $this->run('unset', $member);
+        $name = null;
+        $class = null;
+        if ($member !== null) {
+            $member = self::parseFullName($member);
+            $name = $member->name;
+            $class = $member->class;
+        }
+        $slaveClass = !empty($class) ? $class : $this->slaveClass;
+        $this->handlers->setScope($slaveClass)->unset($name);
     }
 
     /**
@@ -336,10 +445,8 @@ class Sucker
      */
     public function each(\Closure $call, ?string $class = null): void
     {
-        if ($class !== null && substr($class, -2) != '::') {
-            $class .= '::';
-        }
-        $this->run('each', $class, [$call]);
+        $slaveClass = !empty($class) ? $class : $this->slaveClass;
+        $this->handlers->setScope($slaveClass)->each($call);
     }
 
     /**
@@ -351,7 +458,7 @@ class Sucker
      */
     public function & call(string $member, ...$args)
     {
-        return $this->run('call', $member, $args);
+        return $this->apply($member,$args);
     }
 
     /**
@@ -363,7 +470,15 @@ class Sucker
      */
     public function & apply(string $member, array $args)
     {
-        return $this->run('call', $member, $args);
+        $name = null;
+        $class = null;
+        if ($member !== null) {
+            $member = self::parseFullName($member);
+            $name = $member->name;
+            $class = $member->class;
+        }
+        $slaveClass = !empty($class) ? $class : $this->slaveClass;
+        return $this->handlers->setScope($slaveClass)->call($name,...$args);
     }
 
     /**
@@ -377,9 +492,10 @@ class Sucker
      */
     public function & sandbox(\Closure $action, ?string $class = null, array $args = [])
     {
-        if ($class !== null && substr($class, -2) != '::') {
+        /*if ($class !== null && substr($class, -2) != '::') {
             $class .= '::';
-        }
-        return $this->run($action, $class, $args);
+        }*/
+        $class=is_string($class)?trim($class,':'):null;
+        return $this->handlers->setScope($class??$this->slaveClass)->sandbox($action, $args);
     }
 }
