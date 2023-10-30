@@ -1,6 +1,8 @@
 <?php
 
+
 namespace Alpa\Tools\Sucker;
+
 /**
  * Class Sucker
  * Its task is to work with protected / private properties and methods implemented in the object's classes
@@ -24,31 +26,25 @@ class Sucker
         $this->target = $target;
         if ($handlers === null) {
             if (!is_string($target)) {
-                $handlers= new SuckerHandlers();
+                $handlers = new SuckerHandlers();
             } else {
-                $handlers= new SuckerClassHandlers();
+                $handlers = new SuckerClassHandlers();
             }
         }
-        $this->handlers=$handlers;
+        $this->handlers = $handlers;
         $handlers->setSubject($target);
-        if(is_string($target)) {
-            $this->slaveClass=$target;
+        if (is_string($target)) {
+            $this->slaveClass = $target;
         } else {
-            $this->slaveClass=get_class($target);
+            $this->slaveClass = get_class($target);
         }
     }
-    public function __invoke(string $slaveClass):self
+
+    public function __invoke(string $slaveClass): self
     {
-        $this->slaveClass=$slaveClass;
+        $this->slaveClass = $slaveClass;
         return $this;
     }
-    /*
-        public function setOption($key, $value)
-        {
-            if ($this->options[$key]) {
-                $this->options[$key] = $value;
-            }
-        }*/
 
     /**
      * Static sandbox launch option
@@ -73,97 +69,33 @@ class Sucker
 
     public function & run(string $action, ?string $member = null, $args = [])
     {
-        
         $slaveClass = !empty($class) ? $class : $this->slaveClass;
-  
         switch ($action) {
             case 'get':
             case 'call':
             case 'sandbox':
-                $answer = &$this->$action($member,...$args);
-            break;
-            case 'isset':   
-                $answer=$this->$action($member);
+                $answer = &$this->$action($member, ...$args);
+                break;
+            case 'isset':
+                $answer = $this->$action($member);
                 break;
             case 'each':
                 $this->$action(...$args);
                 break;
             case 'set':
-                $this->$action($member,...$args);
-                $answer=null;
+                $this->$action($member, ...$args);
+                $answer = null;
                 break;
             case 'unset':
                 $this->$action($member);
-                $answer=null;
+                $answer = null;
         }
         return $answer;
     }
+
     /**
-     * Run action
-     * @param string|\Closure $action
-     * action for property - get|set|isset|unset|each
-     * action for method - call
-     * custom action -Closure object
-     * @param string|null $member
-     * @param array $args
-     * @return mixed
+     * @deprecated
      */
-    public function & _run($action, ?string $member = null, $args = [])
-    {
-        //deprecated
-        if (empty(static::$actions)) {
-            static::initActions();
-        }
-        $name = null;
-        $class = null;
-        if ($member !== null) {
-            $member = self::parseFullName($member);
-            $name = $member->name;
-            $class = $member->class;
-        }
-        $isSandbox = false;
-        if ($action instanceof \Closure) {
-            $isSandbox = true;
-            $call = &$action;
-        } else {
-            $action = (is_string($this->target) ? 'static_' : '') . $action;
-            $call = static::$actions->$action;
-        }
-        $target = is_string($this->target) ? null : $this->target;
-        $slaveClass = !empty($class) ? $class : (is_string($this->target) ? $this->target : get_class($this->target));
-        $call = $call->bindTo($target, $slaveClass);
-        //self::refNoticeErrorHandler();
-        // Passing values by reference so PHP doesn't complain
-        $answer = null;
-        if ($isSandbox) {
-            if ((new \ReflectionFunction($call))->returnsReference()) {
-                $answer = &$call(...$args);
-            } else {
-                $answer = $call(...$args);
-            }
-        } else {
-            switch ($action) {
-                case 'get':
-                case 'static_get':
-                    $answer = &$call($name);
-                    break;
-                case 'call':
-                case 'static_call':
-                    $answer = &$call($name, ...$args);
-                    break;
-                default:
-                    $answer = $call($name, ...$args);
-            }
-        }
-        //restore_error_handler();
-        return $answer;
-    }
-
-    private static function isReferencesMethod($action)
-    {
-
-    }
-
     private static function refNoticeErrorHandler(bool $prev_restore = false)
     {
         $prev_handler_error = null;
@@ -185,6 +117,7 @@ class Sucker
     }
 
     /**
+     * @deprecated
      * initializes actions (Closures).
      */
     protected static function initActions()
@@ -301,6 +234,7 @@ class Sucker
     }
 
     /**
+     * @deprecated
      * Parses the full name of a property / class
      * @param $fullName
      * Class::method =>class + method
@@ -350,7 +284,7 @@ class Sucker
             $class = $member->class;
         }
         $slaveClass = !empty($class) ? $class : $this->slaveClass;
-        return  $this->handlers->setScope($slaveClass)->get($name);
+        return $this->handlers->setScope($slaveClass)->get($name);
     }
 
     /**
@@ -372,7 +306,7 @@ class Sucker
             $class = $member->class;
         }
         $slaveClass = !empty($class) ? $class : $this->slaveClass;
-        $this->handlers->setScope($slaveClass)->set($name,$value);
+        $this->handlers->setScope($slaveClass)->set($name, $value);
     }
 
     /**
@@ -390,7 +324,7 @@ class Sucker
             $class = $member->class;
         }
         $slaveClass = !empty($class) ? $class : $this->slaveClass;
-        $this->handlers->setScope($slaveClass)->set($name,$value);
+        $this->handlers->setScope($slaveClass)->set($name, $value);
     }
 
     /**
@@ -458,7 +392,7 @@ class Sucker
      */
     public function & call(string $member, ...$args)
     {
-        return $this->apply($member,$args);
+        return $this->apply($member, $args);
     }
 
     /**
@@ -478,7 +412,7 @@ class Sucker
             $class = $member->class;
         }
         $slaveClass = !empty($class) ? $class : $this->slaveClass;
-        return $this->handlers->setScope($slaveClass)->call($name,...$args);
+        return $this->handlers->setScope($slaveClass)->call($name, ...$args);
     }
 
     /**
@@ -495,7 +429,7 @@ class Sucker
         /*if ($class !== null && substr($class, -2) != '::') {
             $class .= '::';
         }*/
-        $class=is_string($class)?trim($class,':'):null;
-        return $this->handlers->setScope($class??$this->slaveClass)->sandbox($action, $args);
+        $class = is_string($class) ? trim($class, ':') : null;
+        return $this->handlers->setScope($class ?? $this->slaveClass)->sandbox($action, $args);
     }
 }
