@@ -16,9 +16,9 @@ class SuckerIterator implements \Iterator
     }
     private function getProps():array
     {
-        return $this->sucker->sandbox(function (){
+        return ($this->sucker)($this->scope)->sandbox(function (){
             return array_keys(get_object_vars($this));
-        },$this->scope);
+        });
     }
     public function rewind():void
     {
@@ -33,9 +33,9 @@ class SuckerIterator implements \Iterator
     {
         do {
             $this->key++;
-        } while (isset($tgis->props[$this->key]) && !$this->sucker->sandbox(function($prop){
+        } while (isset($tgis->props[$this->key]) && !($this->sucker)($this->scope)->sandbox(function($prop){
             return property_exists($this,$prop);
-        },$this->scope,$this->key()));
+        },[$this->key()]));
     }
     public function valid():bool
     {
@@ -54,8 +54,8 @@ class SuckerIterator implements \Iterator
 
     public function current()
     {
-        return $this->sucker->sandbox(function($prop){
+        return ($this->sucker)($this->scope)->sandbox(function($prop){
             return $this->$prop;
-        },$this->scope,[$this->key()]);
+        },[$this->key()]);
     }
 }

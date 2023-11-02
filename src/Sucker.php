@@ -53,7 +53,7 @@ class Sucker
         return $this;
     }
 
-    private function getScope(): string
+    public function getScope(): string
     {
         return $this->scope ?? $this->default_scope;
     }
@@ -176,7 +176,6 @@ class Sucker
      * Will perform custom actions
      * @param \Closure $action function(...$args):mixed
      * $call  will bind to self::target
-     * @param string|null $class NameClass or NameClass::
      * The parent class with whose properties you want to work (reflect)
      * @param array $args arguments to $call function
      * @return mixed result $call function

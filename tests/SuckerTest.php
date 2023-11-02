@@ -2,12 +2,8 @@
 
 namespace Alpa\Tools\Tests\Sucker;
 
-use Alpa\Tools\Sucker\SuckerObjectHandlers;
-use Alpa\Tools\Tests\Sucker\Fixtures\MyClass;
+
 use Alpa\Tools\Tests\Sucker\Fixtures\ChildClass;
-use Alpa\Tools\Tests\Sucker\Fixtures\CoreClass;
-use Alpa\Tools\Tests\Sucker\Fixtures\SubChildClass;
-use Alpa\Tools\Tests\Sucker\Fixtures\Sucker;
 use PHPUnit\Framework\TestCase;
 use Alpa\PhpunitHelpers\Assertions\AdditionalAssertionsTrait as Assert;
 

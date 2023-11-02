@@ -16,11 +16,11 @@ class SuckerClassIterator implements \Iterator
     }
     private function getProps():array
     {
-        return $this->sucker->sandbox(function (){
+        return ($this->sucker)($this->scope)->sandbox(function (){
             $reflector=new \ReflectionClass(static::class);
             $props=array_keys($reflector->getStaticProperties());
             return $props;
-        },$this->scope);
+        });
     }
     public function rewind():void
     {
@@ -53,8 +53,8 @@ class SuckerClassIterator implements \Iterator
     public function current()
     {
         $prop=$this->key();
-        return $this->sucker->sandbox(function($prop){
+        return ($this->sucker)($this->scope)->sandbox(function($prop){
             return static::$$prop;
-        },$this->scope,[$prop]);
+        },[$prop]);
     }
 }

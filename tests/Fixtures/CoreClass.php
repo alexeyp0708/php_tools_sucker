@@ -30,7 +30,10 @@ class CoreClass
     {
         return $value;
     }
-
+    private function &testReturnReference(object $object)
+    {
+        return $object->prop;
+    }
     private static function &static_testReference(&$value)
     {
         return $value;
