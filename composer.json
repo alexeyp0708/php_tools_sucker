@@ -10,7 +10,7 @@
     }
   ],
   "require": {
-    "php": "^7.4||^8.0",
+    "php": "^7.4||^8",
     "alpa/tools_proxy_object": "^1.0.13"
   },
   "autoload": {
@@ -19,11 +19,18 @@
     }
   },
   "require-dev": {
-    "phpunit/phpunit": "^9.5"
+    "phpunit/phpunit": "^9.5",
+    "alpa/phpunit_helpers": "dev-master"
   },
   "autoload-dev": {
     "psr-4": {
       "Alpa\\Tools\\Tests\\Sucker\\": "tests/"
     }
-  }
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/alexeyp0708/php_phpunit_helpers.git"
+    }
+  ]
 }

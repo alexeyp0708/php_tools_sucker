@@ -4,7 +4,7 @@
 namespace Alpa\Tools\Sucker;
 
 
-class SuckerObjectHandlers  implements SuckerHandlersInterface
+class SuckerObjectHandlers implements SuckerHandlersInterface
 {
     private object $subject;
     private ?string $scope = null;
@@ -37,7 +37,7 @@ class SuckerObjectHandlers  implements SuckerHandlersInterface
     public function set(string $member, &$value): void
     {
         $call = (SuckerActions::getAction('set'))->bindTo($this->subject, $this->scope ?? $this->selfClass);
-        $call($member,$value);
+        $call($member, $value);
     }
 
     public function & call($member, &...$args)
@@ -48,7 +48,7 @@ class SuckerObjectHandlers  implements SuckerHandlersInterface
 
     public function each(callable $each): void
     {
-        $each=$each->bindTo($this->subject, $this->scope ?? $this->selfClass);
+        $each = $each->bindTo($this->subject, $this->scope ?? $this->selfClass);
         $call = (SuckerActions::getAction('each'))->bindTo($this->subject, $this->scope ?? $this->selfClass);
         $call($each);
     }
@@ -65,7 +65,7 @@ class SuckerObjectHandlers  implements SuckerHandlersInterface
         $call($member);
     }
 
-    public function & sandbox(\Closure $call, $args)
+    public function & sandbox(\Closure $call, $args = [])
     {
         $call = $call->bindTo($this->subject, $this->scope ?? $this->selfClass);
         if ((new \ReflectionFunction($call))->returnsReference()) {

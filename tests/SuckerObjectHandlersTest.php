@@ -5,6 +5,7 @@ namespace Alpa\Tools\Tests\Sucker;
 
 use Alpa\Tools\Sucker\SuckerObjectHandlers;
 use Alpa\Tools\Tests\Sucker\Fixtures;
+use Alpa\PhpunitHelpers\Assertions\AdditionalAssertionsTrait as Assert;
 
 class SuckerObjectHandlersTest extends \PHPUnit\Framework\TestCase
 {
@@ -48,7 +49,7 @@ class SuckerObjectHandlersTest extends \PHPUnit\Framework\TestCase
             ['private_child_prop', Fixtures\ChildClass::class, 'private_child_prop'],//11
             ['private_prop', Fixtures\ChildClass::class, 'private_child_prop'],//12
             ['protected_prop', Fixtures\ChildClass::class, 'protected_child_prop'],//13
-           
+
             //Scope CoreClass class
             ['private_core_prop', Fixtures\CoreClass::class, 'private_core_prop'],//14
             ['private_prop', Fixtures\CoreClass::class, 'private_core_prop'],//15
@@ -64,10 +65,19 @@ class SuckerObjectHandlersTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
+    public static function providerByScopes(): array
+    {
+        return [
+            [Fixtures\SubChildClass::class],
+            [Fixtures\ChildClass::class],
+            [Fixtures\CoreClass::class],
+        ];
+    }
+
     /**
      * @dataProvider providerByProperties
      */
-    public function test_getByReference(string $property, ?string $scope = null, $expected='')
+    public function test_getByReference(string $property, ?string $scope = null, $expected = '')
     {
         $handlers = self::$fixtures['handlers'];
         $handlers->setScope($scope);
@@ -78,15 +88,6 @@ class SuckerObjectHandlersTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expected, $handlers->get($property));
         unset($var);
     }
-    
-    public static function providerByScopes():array
-    {
-        return [
-            [Fixtures\SubChildClass::class],
-            [Fixtures\ChildClass::class],
-            [Fixtures\CoreClass::class],
-        ];
-    }
 
     /**
      * @dataProvider providerByScopes
@@ -96,80 +97,74 @@ class SuckerObjectHandlersTest extends \PHPUnit\Framework\TestCase
         $handlers = self::$fixtures['handlers'];
         $handlers->setScope($scope);
 
+
         //Test for an error when a property does not exist in an object
-        $check=false;
-        set_error_handler(function(...$args) use (&$check){
-            if(substr($args[1],0,18)==='Undefined property'){
-                $check=true;
-                return true;
-            }
-            return false;
-        },E_USER_WARNING|E_USER_NOTICE);
-        $handlers->get('no_property');
-        restore_error_handler();
-        $this->assertTrue($check,'Test for generating an error when a property is missing');
-        //Recheck. We check whether the property was not created after checking for absence
-        $check=false;
-        set_error_handler(function(...$args) use (&$check){
-            if(substr($args[1],0,18)==='Undefined property'){
-                $check=true;
-                return true;
-            }
-            return false;
-        },E_USER_WARNING|E_USER_NOTICE);
-        $handlers->get('no_property');
-        restore_error_handler();
-        $this->assertTrue($check,'We check whether the property was not created after checking for absence');
-        
+        $this->assertTrue(
+            Assert::isError(
+                fn() => $handlers->get('no_property'),
+                'Undefined property',
+                E_NOTICE | E_WARNING
+            ),
+            'Test for generating an error when a property is missing'
+        );
+        $this->assertTrue(
+            Assert::isError(
+                fn() => $handlers->get('no_property'),
+                'Undefined property',
+                E_NOTICE | E_WARNING
+            ),
+            'We check whether the property was not created after checking for absence'
+        );
     }
-    
+
     /**
      * @dataProvider providerByProperties
      */
-    public function test_setByReference(string $property, ?string $scope = null, $expected='')
+    public function test_setByReference(string $property, ?string $scope = null, $expected = '')
     {
         $handlers = self::$fixtures['handlers'];
         $handlers->setScope($scope);
         $restore = $handlers->get($property);
-        $value='changed';
-        $handlers->set($property,$value);
-        $this->assertSame($value,$handlers->get($property));
-        $value=$restore;
+        $value = 'changed';
+        $handlers->set($property, $value);
+        $this->assertSame($value, $handlers->get($property));
+        $value = $restore;
         $this->assertSame($expected, $handlers->get($property));
         unset($var);
     }
+
     public static function providerByMethods(): array
     {
         return [
-            ['private_subchild_method',null,'private_subchild_method'],//0
-            ['private_method',null,'private_subchild_method'],//1
-            ['protected_method',null,'protected_child_method'],//2
-            ['private_child_method',Fixtures\ChildClass::class,'private_child_method'],//3
-            ['private_method',Fixtures\ChildClass::class,'private_child_method'],//4
-            ['protected_method',Fixtures\ChildClass::class,'protected_child_method'],//5
-            ['private_core_method',Fixtures\CoreClass::class,'private_core_method'],//6
-            ['private_method',Fixtures\CoreClass::class,'private_core_method'],//7
+            ['private_subchild_method', null, 'private_subchild_method'],//0
+            ['private_method', null, 'private_subchild_method'],//1
+            ['protected_method', null, 'protected_child_method'],//2
+            ['private_child_method', Fixtures\ChildClass::class, 'private_child_method'],//3
+            ['private_method', Fixtures\ChildClass::class, 'private_child_method'],//4
+            ['protected_method', Fixtures\ChildClass::class, 'protected_child_method'],//5
+            ['private_core_method', Fixtures\CoreClass::class, 'private_core_method'],//6
+            ['private_method', Fixtures\CoreClass::class, 'private_core_method'],//7
         ];
     }
-    
-    /** 
-     *  @dataProvider providerByMethods
+
+    /**
+     * @dataProvider providerByMethods
      */
-    public function test_call(string $method,?string $scope,$expected)
+    public function test_call(string $method, ?string $scope, $expected)
     {
         $handlers = self::$fixtures['handlers'];
         $handlers->setScope($scope);
-        $this->assertSame($expected,$handlers->call($method));
+        $this->assertSame($expected, $handlers->call($method));
     }
 
     public function test_callByReference()
     {
         $handlers = self::$fixtures['handlers'];
         $handlers->setScope(Fixtures\CoreClass::class);
-        $var1='hello';
-        $var2=&$handlers->call('testReference',$var1);
-        $var2='bay';
-        $this->assertSame($var2,$var1);
+        $var1 = 'hello';
+        $var2 =& $handlers->call('testReference', $var1);
+        $var2 = 'bay';
+        $this->assertSame($var2, $var1);
     }
 
     /**
@@ -177,65 +172,101 @@ class SuckerObjectHandlersTest extends \PHPUnit\Framework\TestCase
      */
     public function test_each($scope)
     {
-        $expected=[$scope=>[]];
-        foreach(self::providerByProperties() as $value){
-           if($scope===($value[1]??Fixtures\SubChildClass::class)){
-               $expected[$scope][$value[0]]=$value[2];
-           }
+        $expected = [$scope => []];
+        foreach (self::providerByProperties() as $value) {
+            if ($scope === ($value[1] ?? Fixtures\SubChildClass::class)) {
+                $expected[$scope][$value[0]] = $value[2];
+            }
         }
-        $tester=$this;
+        $tester = $this;
         $handlers = self::$fixtures['handlers'];
         $object = self::$fixtures['subject'];
         $handlers->setScope($scope);
-        $check=0;
-        $handlers->each(function($key,$value) use (&$check,$tester,$scope,$object){
-            $tester->assertSame($scope,self::class);
-            $tester->assertTrue($this===$object);
-            if($check===0){
+        $check = 0;
+        $handlers->each(function ($key, $value) use (&$check, $tester, $scope, $object) {
+            $tester->assertSame($scope, self::class);
+            $tester->assertTrue($this === $object);
+            if ($check === 0) {
                 $check++;
             }
             return true;//break 
         });
-        $tester->assertTrue(1===$check,'Test break foreach (return true)');
-        
-        $handlers->each(function($key,$value) use ($expected,$tester,$scope){
-            $tester->assertSame($scope,self::class);
-            $tester->assertSame($expected[self::class][$key],$value);
+        $tester->assertTrue(1 === $check, 'Test break foreach (return true)');
+
+        $handlers->each(function ($key, $value) use ($expected, $tester, $scope) {
+            $tester->assertSame($scope, self::class);
+            $tester->assertSame($expected[self::class][$key], $value);
         });
     }
 
     public function test_eachByReference()
     {
-        $tester=$this;
+        $tester = $this;
         $handlers = self::$fixtures['handlers'];
         $handlers->setScope(null);
-        $handlers->each(function($key,&$value) use ($tester,$handlers,&$check){
-            $buf=$value;
-            $value='changed';
-            $tester->assertSame($value,$handlers->get($key));
-            $value=$buf;
-            $tester->assertSame($value,$handlers->get($key));
+        $handlers->each(function ($key, &$value) use ($tester, $handlers, &$check) {
+            $buf = $value;
+            $value = 'changed';
+            $tester->assertSame($value, $handlers->get($key));
+            $value = $buf;
+            $tester->assertSame($value, $handlers->get($key));
             return true;
         });
     }
 
     public function test_isset()
     {
+        $handlers = self::$fixtures['handlers'];
 
+        $handlers->setScope(null);
+        $this->assertFalse($handlers->isset('no_property'));
+        $this->assertTrue($handlers->isset('private_subchild_prop'));
+        $this->assertFalse($handlers->isset('private_child_prop'));
+
+        $handlers->setScope(Fixtures\ChildClass::class);
+        $this->assertTrue($handlers->isset('private_child_prop'));
+        $this->assertFalse($handlers->isset('private_core_prop'));
+
+        $handlers->setScope(Fixtures\CoreClass::class);
+        $this->assertTrue($handlers->isset('private_core_prop'));
+        $this->assertFalse($handlers->isset('private_subchild_prop'));
+        $this->assertFalse($handlers->isset('private_child_prop'));
     }
 
     public function test_unset()
     {
-
+        $handlers = self::$fixtures['handlers'];
+        $handlers->setScope(null);
+        $this->assertTrue($handlers->isset('private_subchild_prop'));
+        $handlers->unset("private_subchild_prop");
+        $this->assertFalse($handlers->isset('private_subchild_prop'));
     }
 
-    public function test_sandbox()
+    /**
+     * @dataProvider providerByScopes
+     */
+    public function test_sandbox($scope)
     {
-
+        $handlers = self::$fixtures['handlers'];
+        $subject = self::$fixtures['subject'];
+        $handlers->setScope($scope);
+        $tester = $this;
+        $answer =& $handlers->sandbox(function (...$args) use ($tester, $scope, $subject) {
+            $tester->assertSame($scope, self::class);
+            $tester->assertTrue($subject === $this);
+            return $args[0];
+        }, ['hello']);
+        $tester->assertSame('hello', $answer);
     }
 
     public function test_sandboxByReference()
     {
-
+        $handlers = self::$fixtures['handlers'];
+        $arg = 'hello';
+        $answer =& $handlers->sandbox(function & (&...$args) {
+            return $args[0];
+        }, [&$arg]);
+        $arg = 'bay';
+        $this->assertTrue($arg === $answer);
     }
 }

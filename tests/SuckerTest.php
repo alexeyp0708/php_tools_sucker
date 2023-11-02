@@ -2,626 +2,352 @@
 
 namespace Alpa\Tools\Tests\Sucker;
 
+use Alpa\Tools\Sucker\SuckerObjectHandlers;
 use Alpa\Tools\Tests\Sucker\Fixtures\MyClass;
 use Alpa\Tools\Tests\Sucker\Fixtures\ChildClass;
 use Alpa\Tools\Tests\Sucker\Fixtures\CoreClass;
+use Alpa\Tools\Tests\Sucker\Fixtures\SubChildClass;
 use Alpa\Tools\Tests\Sucker\Fixtures\Sucker;
 use PHPUnit\Framework\TestCase;
+use Alpa\PhpunitHelpers\Assertions\AdditionalAssertionsTrait as Assert;
 
 class SuckerTest extends TestCase
 {
-    public function test_static_get()
+    private static array $fixtures = [];
+
+    public static function setUpBeforeClass(): void
     {
-        $target = ChildClass::class;
-        $sucker = new Sucker($target);
-        $this->assertSame('private_static_child_prop', $sucker->get('private_static_child_prop'));
-        $this->assertSame('private_static_child_prop', $sucker->get('private_static_prop'));
-        $this->assertSame('protected_static_child_prop', $sucker->get('protected_static_prop'));
-
-        $this->assertSame('private_static_core_prop', $sucker->get(CoreClass::class . '::private_static_core_prop'));
-        $this->assertSame('private_static_core_prop', $sucker->get(CoreClass::class . '::private_static_prop'));
-        $this->assertSame('protected_static_core_prop', $sucker->get(CoreClass::class . '::protected_static_prop'));
-
-
+        $obj = new Fixtures\SubChildClass();
+        $handlers = new \Alpa\Tools\Sucker\Sucker($obj);
+        self::$fixtures['handlers'] = $handlers;
+        self::$fixtures['subject'] = $obj;
+        self::$fixtures['staticHandlers'] = new \Alpa\Tools\Sucker\Sucker(get_class($obj));
     }
 
-    public function test_get()
+    public static function providerByProperties(): array
     {
-        $target = new ChildClass();
-        $sucker = new Sucker($target);
-
-        $this->assertSame('private_child_prop', $sucker->get('private_child_prop'));
-        $this->assertSame('private_child_prop', $sucker->get('private_prop'));
-        $this->assertSame('protected_child_prop', $sucker->get('protected_prop'));
-
-        $this->assertSame('private_core_prop', $sucker->get(CoreClass::class . '::private_core_prop'));
-        $this->assertSame('private_core_prop', $sucker->get(CoreClass::class . '::private_prop'));
-
-        // передача родительского класса не имеет значения
-        $this->assertSame('protected_child_prop', $sucker->get(CoreClass::class . '::protected_prop'));
+        return SuckerObjectHandlersTest::providerByProperties();
     }
 
-    public function test_static_ref_get()
+    public static function providerByStaticProperties(): array
     {
-        $target = ChildClass::class;
-        $sucker = new Sucker($target);
-        $ref_prop =& $sucker->get(CoreClass::class . '::private_static_prop');
-        $ref_prop_val = $ref_prop;
-        $ref_prop = 'changed';
-        $this->assertSame('changed', $sucker->get(CoreClass::class . '::private_static_prop'));
-        $this->assertSame('private_static_child_prop', $sucker->get('private_static_prop'));
-        $ref_prop = $ref_prop_val;
-        unset($ref_prop);
-        $ref_prop =& $sucker->get('private_static_prop');
-        $ref_prop_val = $ref_prop;
-        $ref_prop = 'changed';
-        $this->assertSame('changed', $sucker->get('private_static_prop'));
-        $this->assertSame('private_static_core_prop', $sucker->get(CoreClass::class . '::private_static_prop'));
-        $ref_prop = $ref_prop_val;
-        unset($ref_prop);
-        $this->assertSame('private_static_child_prop', $sucker->get('private_static_prop'));
+        return SuckerClassHandlersTest::providerByProperties();
     }
 
-    public function test_ref_get()
+    public static function providerByScopes(): array
     {
-        $target = new ChildClass();
-        $sucker = new Sucker($target);
-        $ref_prop =& $sucker->get(CoreClass::class . '::private_prop');
-        $ref_prop_val = $ref_prop;
-        $ref_prop = 'changed';
-        $this->assertSame('changed', $sucker->get(CoreClass::class . '::private_prop'));
-        $this->assertSame('private_child_prop', $sucker->get('private_prop'));
-        $ref_prop = $ref_prop_val;
-        unset($ref_prop);
-        $ref_prop =& $sucker->get('private_prop');
-        $ref_prop_val = $ref_prop;
-        $ref_prop = 'changed';
-        $this->assertSame('changed', $sucker->get('private_prop'));
-        $this->assertSame('private_core_prop', $sucker->get(CoreClass::class . '::private_prop'));
-        $ref_prop = $ref_prop_val;
-        unset($ref_prop);
-        $this->assertSame('private_child_prop', $sucker->get('private_prop'));
-
-        $check=false;
-        set_error_handler(function(...$args) use (&$check){
-            if(substr($args[1],0,18)==='Undefined property'){
-                $check=true;
-                return true;
-            }
-            return false;
-        },E_USER_WARNING|E_USER_NOTICE);
-        $sucker->get(CoreClass::class . '::protected_core_prop');
-        restore_error_handler();
-        $this->assertTrue($check,'Test for generating an error when a property is missing');
-        $check=false;
-        set_error_handler(function(...$args) use (&$check){
-            if(substr($args[1],0,18)==='Undefined property'){
-                $check=true;
-                return true;
-            }
-            return false;
-        },E_USER_WARNING|E_USER_NOTICE);
-        $sucker->get(CoreClass::class . '::protected_core_prop');
-        restore_error_handler();
-        $this->assertTrue($check,'We check whether the property was not created after checking for absence');
+        return SuckerObjectHandlersTest::providerByScopes();
     }
 
-    public static function test_static_set()
+    public static function providerByMethods(): array
     {
-        $target = ChildClass::class;
-        $sucker = new Sucker($target);
-        $buf = $sucker->get('private_static_child_prop');
-        $sucker->set('private_static_child_prop', 'changed');
-        self::assertSame('changed', $sucker->get('private_static_child_prop'));
-        $sucker->set('private_static_child_prop', $buf);
-        self::assertSame($buf, $sucker->get('private_static_child_prop'));
-
-        $buf = $sucker->get('protected_static_prop');
-        $sucker->set('protected_static_prop', 'changed');
-        self::assertSame('changed', $sucker->get('protected_static_prop'));
-        $sucker->set('protected_static_prop', $buf);
-        self::assertSame($buf, $sucker->get('protected_static_prop'));
-        
-        $buf = $sucker->get(CoreClass::class . '::private_static_core_prop');
-        $sucker->set(CoreClass::class . '::private_static_core_prop', 'changed');
-        self::assertSame('changed', $sucker->get(CoreClass::class . '::private_static_core_prop'));
-        $sucker->set(CoreClass::class . '::private_static_core_prop', $buf);
-        self::assertSame($buf, $sucker->get(CoreClass::class . '::private_static_core_prop'));
-
-        $buf = $sucker->get(CoreClass::class . '::protected_static_prop');
-        $sucker->set(CoreClass::class . '::protected_static_prop', 'changed');
-        self::assertSame('changed', $sucker->get(CoreClass::class . '::protected_static_prop'));
-        $sucker->set(CoreClass::class . '::protected_static_prop', $buf);
-        self::assertSame($buf, $sucker->get(CoreClass::class . '::protected_static_prop'));
-
-        $buf = $sucker->get(CoreClass::class . '::protected_static_core_prop');
-        $sucker->set(CoreClass::class . '::protected_static_core_prop', 'changed');
-        self::assertSame('changed', $sucker->get(CoreClass::class . '::protected_static_core_prop'));
-        self::assertSame('changed', $sucker->get('protected_static_core_prop'));
-        $sucker->set(CoreClass::class . '::protected_static_core_prop', $buf);
-        self::assertSame($buf, $sucker->get(CoreClass::class . '::protected_static_core_prop'));
+        return SuckerObjectHandlersTest::providerByMethods();
     }
 
-    public function test_set()
+    public static function providerByStaticMethods(): array
     {
-        $target = new ChildClass;
-        $sucker = new Sucker($target);
-        $buf = $sucker->get('private_child_prop');
-        $sucker->set('private_child_prop', 'changed');
-        $this->assertSame('changed', $sucker->get('private_child_prop'));
-        $sucker->set('private_child_prop', $buf);
-        $this->assertSame($buf, $sucker->get('private_child_prop'));
-
-        $buf = $sucker->get('protected_prop');
-        $sucker->set('protected_prop', 'changed');
-        $this->assertSame('changed', $sucker->get('protected_prop'));
-        $sucker->set('protected_prop', $buf);
-        $this->assertSame($buf, $sucker->get('protected_prop'));
-
-        $buf = $sucker->get(CoreClass::class . '::private_core_prop');
-        $sucker->set(CoreClass::class . '::private_core_prop', 'changed');
-        $this->assertSame('changed', $sucker->get(CoreClass::class . '::private_core_prop'));
-        $sucker->set(CoreClass::class . '::private_core_prop', $buf);
-        $this->assertSame($buf, $sucker->get(CoreClass::class . '::private_core_prop'));
-
-        $buf = $sucker->get(CoreClass::class . '::protected_prop');
-        $sucker->set(CoreClass::class . '::protected_prop', 'changed');
-        $this->assertSame('changed', $sucker->get(CoreClass::class . '::protected_prop'));
-        $this->assertSame('changed', $sucker->get('protected_prop'));
-        $sucker->set(CoreClass::class . '::protected_prop', $buf);
-        $this->assertSame($buf, $sucker->get(CoreClass::class . '::protected_prop'));
-
-        set_error_handler(function(...$args) use (&$check){
-            var_dump($args[1]);
-        },E_DEPRECATED);
-        restore_error_handler();
-        
-        // As of PHP 8.2, adding dynamic properties is deprecated
-        //  deprecated start
-        //????
-        $sucker->set(CoreClass::class . '::protected_core_prop', 'changed'); 
-       
-        $this->assertSame('changed', $sucker->get(CoreClass::class . '::protected_core_prop'));
-        $this->assertSame('changed', $sucker->get('protected_core_prop'));
-        $sucker->unset(CoreClass::class . '::protected_core_prop');
-        //$sucker->set(CoreClass::class . '::protected_core_prop', $buf);
-        //$this->assertSame($buf, $sucker->get(CoreClass::class . '::protected_core_prop'));
-        //  deprecated end
+        return SuckerClassHandlersTest::providerByMethods();
     }
 
-    public static function test_static_setRef()
+    /**
+     * @dataProvider providerByStaticProperties
+     */
+    public function test_staticGetByReference(string $property, ?string $scope = null, $expected = '')
     {
-        $target = ChildClass::class;
-        $sucker = new Sucker($target);
-        // reference test
-        $var = 'changed';
-        $buf = $sucker->get(CoreClass::class . '::protected_static_prop');
-        $sucker->setRef(CoreClass::class . '::protected_static_prop', $var);
-        self::assertSame('changed', $sucker->get(CoreClass::class . '::protected_static_prop'));
-        self::assertSame('protected_static_child_prop', $sucker->get('protected_static_prop'));
-        $var = $buf;
-        self::assertSame($buf, $sucker->get(CoreClass::class . '::protected_static_prop'));
-        //$var2=&$var;
+        $handlers = self::$fixtures['staticHandlers'];
+        $var =& $handlers($scope)->get($property);
+        $var = strtoupper($var);
+        $this->assertSame(strtoupper($expected), $handlers($scope)->get($property));
+        $var = strtolower($var);
+        $this->assertSame($expected, $handlers($scope)->get($property));
         unset($var);
-        //xdebug_debug_zval('var2');
+        $this->assertSame('static_private_subchild_prop', $handlers->get('static_private_subchild_prop'), 'check reset scope');
     }
 
-    public function test_setRef()
+    /**
+     * @dataProvider providerByProperties
+     */
+    public function test_getByReference(string $property, ?string $scope = null, $expected = '')
     {
-        $target = new ChildClass;
-        $sucker = new Sucker($target);
-        // reference test
-        $var = 'changed';
-        $buf = $sucker->get(CoreClass::class . '::protected_prop');
-        $sucker->setRef(CoreClass::class . '::protected_prop', $var);
-        self::assertSame('changed', $sucker->get(CoreClass::class . '::protected_prop'));
-        self::assertSame('changed', $sucker->get('protected_prop'));
-        $var = $buf;
-        self::assertSame($buf, $sucker->get(CoreClass::class . '::protected_prop'));
-        //$var2=&$var;
+        $handlers = self::$fixtures['handlers'];
+        $var =& $handlers($scope)->get($property);
+        $var = strtoupper($var);
+        $this->assertSame(strtoupper($expected), $handlers($scope)->get($property));
+        $var = strtolower($var);
+        $this->assertSame($expected, $handlers($scope)->get($property));
         unset($var);
-        //xdebug_debug_zval('var2');
+        $this->assertSame('private_subchild_prop', $handlers->get('private_subchild_prop'), 'check reset scope');
     }
 
-    public static function test_static_call()
+    /**
+     * @dataProvider providerByProperties
+     */
+    public function test_set(string $property, ?string $scope = null, $expected = '')
     {
-        $target = ChildClass::class;
-        $sucker = new Sucker($target);
-        self::assertSame('private_static_child_method', $sucker->call('private_static_child_method'));
-        self::assertSame('private_static_child_method', $sucker->call('private_static_method'));
-        self::assertSame('protected_static_child_method', $sucker->call('protected_static_method'));
-        self::assertSame(['hello', 'friend'], $sucker->call('static_returns_args', 'hello', 'friend'));
-
-        self::assertSame('private_static_core_method', $sucker->call(CoreClass::class . '::private_static_core_method'));
-        self::assertSame('private_static_core_method', $sucker->call(CoreClass::class . '::private_static_method'));
-        self::assertSame('protected_static_core_method', $sucker->call(CoreClass::class . '::protected_static_method'));
+        $handlers = self::$fixtures['handlers'];
+        $restore = $handlers($scope)->get($property);
+        $handlers($scope)->set($property, 'changed');
+        $this->assertSame('changed', $handlers($scope)->get($property));
+        $handlers($scope)->set($property, $restore);
+        $this->assertSame($expected, $handlers($scope)->get($property));
+        $this->assertSame('private_subchild_prop', $handlers->get('private_subchild_prop'), 'check reset scope');
     }
 
-    public function test_call()
+    /**
+     * @dataProvider providerByProperties
+     */
+    public function test_setByReference(string $property, ?string $scope = null, $expected = '')
     {
-        $target = new ChildClass;
-        $sucker = new Sucker($target);
-        $this->assertSame('private_child_method',$sucker->call('private_child_method') );
-        $this->assertSame( 'private_child_method',$sucker->call('private_method'));
-        $this->assertSame('protected_child_method',$sucker->call('protected_method'));
-        $this->assertSame(['hello', 'friend'],$sucker->call('returns_args', 'hello', 'friend') );
-
-        $this->assertSame('private_core_method',$sucker->call(CoreClass::class . '::private_core_method') );
-        $this->assertSame('private_core_method',$sucker->call(CoreClass::class . '::private_method') );
-        $this->assertSame('protected_child_method',$sucker->call(CoreClass::class . '::protected_method') );
+        $handlers = self::$fixtures['handlers'];
+        $restore = $handlers($scope)->get($property);
+        $value = 'changed';
+        $handlers($scope)->setRef($property, $value);
+        $this->assertSame($value, $handlers($scope)->get($property));
+        $value = $restore;
+        $this->assertSame($expected, $handlers($scope)->get($property));
+        $this->assertSame('private_subchild_prop', $handlers->get('private_subchild_prop'), 'check reset scope');
     }
 
-    public function test_ref_apply()
+    /**
+     * @dataProvider providerByStaticProperties
+     */
+    public function test_staticSet(string $property, ?string $scope = null, $expected = '')
     {
-        $arg = 'hello';
-        $target = new ChildClass;
-        $sucker = new Sucker($target);
-        $answer =& $sucker->apply('ref_method', [&$arg]);
-        $arg = 'bay';
-        $this->assertSame($answer, $arg);
-        unset($answer);
-        //xdebug_debug_zval('arg');
-        unset($arg);
-        $arg = 'hello';
-        $arg2 = 'bay';
-        $answer =& $sucker->apply('return_args_method', [&$arg, &$arg2]);
-        $arg = 'qwer';
-        $this->assertSame($arg,$answer[0] );
-        $arg2 = 'qwer2';
-        $this->assertSame($arg2,$answer[1] );
-        unset($answer[0], $answer[1], $arg, $arg1);
+        $handlers = self::$fixtures['staticHandlers'];
+        $restore = $handlers($scope)->get($property);
+        $handlers($scope)->set($property, 'changed');
+        $this->assertSame('changed', $handlers($scope)->get($property));
+        $handlers($scope)->set($property, $restore);
+        $this->assertSame($expected, $handlers($scope)->get($property));
+        $this->assertSame('static_private_subchild_prop', $handlers->get('static_private_subchild_prop'), 'check reset scope');
     }
 
-    public static function test_static_ref_apply()
+    /**
+     * @dataProvider providerByStaticProperties
+     */
+    public function test_staticSetByReference(string $property, ?string $scope = null, $expected = '')
     {
-        $arg = 'hello';
-        $target = new ChildClass;
-        $sucker = new Sucker($target);
-        $answer =& $sucker->apply('ref_method', [&$arg]);
-        $arg = 'bay';
-        self::assertSame( $answer,$arg);
-        unset($answer);
-        //xdebug_debug_zval('arg');
-        unset($arg);
+        $handlers = self::$fixtures['staticHandlers'];
+        $restore = $handlers($scope)->get($property);
+        $value = 'changed';
+        $handlers($scope)->setRef($property, $value);
+        $this->assertSame($value, $handlers($scope)->get($property));
+        $value = $restore;
+        $this->assertSame($expected, $handlers($scope)->get($property));
+        $this->assertSame('static_private_subchild_prop', $handlers->get('static_private_subchild_prop'), 'check reset scope');
+    }
+
+    /**
+     * @dataProvider providerByMethods
+     */
+    public function test_call(string $method, ?string $scope, $expected)
+    {
+        $handlers = self::$fixtures['handlers'];
+        $this->assertSame($expected, $handlers($scope)->call($method));
+        $this->assertSame('private_subchild_prop', $handlers->get('private_subchild_prop'), 'check reset scope');
+    }
+
+    /**
+     * @dataProvider providerByStaticMethods
+     */
+    public function test_staticCall(string $method, ?string $scope, $expected)
+    {
+        $handlers = self::$fixtures['staticHandlers'];
+        $this->assertSame($expected, $handlers($scope)->call($method));
+        $this->assertSame('static_private_subchild_prop', $handlers->get('static_private_subchild_prop'), 'check reset scope');
+    }
+
+    public function test_apply()
+    {
+        $handlers = self::$fixtures['handlers'];
+        $var1 = 'hello';
+        $var2 =& $handlers(Fixtures\CoreClass::class)->apply('testReference', [&$var1]);
+        $var2 = 'bay';
+        $this->assertSame($var2, $var1);
+        $this->assertSame('private_subchild_prop', $handlers->get('private_subchild_prop'), 'check reset scope');
     }
 
 
     public function test_isset()
     {
-        $target = new ChildClass;
-        $sucker = new Sucker($target);
-        $this->assertTrue($sucker->isset('private_child_prop'));
-        $this->assertTrue(!$sucker->isset('private_core_prop'));
-        $this->assertTrue(!$sucker->isset('no_prop'));
+        $handlers = self::$fixtures['handlers'];
 
-        $this->assertTrue(!$sucker->isset(CoreClass::class . '::private_child_prop'));
-        $this->assertTrue($sucker->isset(CoreClass::class . '::private_core_prop'));
-        $this->assertTrue(!$sucker->isset(CoreClass::class . '::no_prop'));
+        $this->assertFalse($handlers->isset('no_property'));
+        $this->assertTrue($handlers->isset('private_subchild_prop'));
+        $this->assertFalse($handlers->isset('private_child_prop'));
+
+        $this->assertTrue($handlers(Fixtures\ChildClass::class)->isset('private_child_prop'));
+        $this->assertFalse($handlers(Fixtures\ChildClass::class)->isset('private_core_prop'));
+
+        $this->assertTrue($handlers(Fixtures\CoreClass::class)->isset('private_core_prop'));
+        $this->assertFalse($handlers(Fixtures\CoreClass::class)->isset('private_subchild_prop'));
+        $this->assertFalse($handlers(Fixtures\CoreClass::class)->isset('private_child_prop'));
+
+        $this->assertSame('private_subchild_prop', $handlers->get('private_subchild_prop'), 'check reset scope');
     }
 
-    public static function test_static_isset()
+    public function test_staticIsset()
     {
-        $target = ChildClass::class;
-        $sucker = new Sucker($target);
-        self::assertTrue($sucker->isset('private_static_child_prop'));
-        self::assertTrue(!$sucker->isset('private_static_core_prop'));
-        self::assertTrue(!$sucker->isset('no_prop'));
+        $tester = $this;
+        $handlers = self::$fixtures['staticHandlers'];
 
-        self::assertTrue(!$sucker->isset(CoreClass::class . '::private_static_child_prop'));
-        self::assertTrue($sucker->isset(CoreClass::class . '::private_static_core_prop'));
-        self::assertTrue(!$sucker->isset(CoreClass::class . '::no_prop'));
+        $this->assertFalse($handlers->isset('no_property'));
+        $this->assertTrue($handlers->isset('static_private_subchild_prop'));
+        $this->assertFalse($handlers->isset('static_private_child_prop'));
+
+        $this->assertTrue($handlers(Fixtures\ChildClass::class)->isset('static_private_child_prop'));
+        $this->assertFalse($handlers(Fixtures\ChildClass::class)->isset('static_private_core_prop'));
+
+        $this->assertTrue($handlers(Fixtures\CoreClass::class)->isset('static_private_core_prop'));
+        $this->assertFalse($handlers(Fixtures\CoreClass::class)->isset('static_private_subchild_prop'));
+        $this->assertFalse($handlers(Fixtures\CoreClass::class)->isset('static_private_child_prop'));
+
+        $this->assertSame('static_private_subchild_prop', $handlers->get('static_private_subchild_prop'), 'check reset scope');
+    }
+
+    /**
+     * @dataProvider providerByScopes
+     */
+    public function test_each($scope)
+    {
+        $expected = [$scope => []];
+        foreach (self::providerByProperties() as $value) {
+            if ($scope === ($value[1] ?? Fixtures\SubChildClass::class)) {
+                $expected[$scope][$value[0]] = $value[2];
+            }
+        }
+        $tester = $this;
+        $handlers = self::$fixtures['handlers'];
+        $object = self::$fixtures['subject'];
+        $check = 0;
+        $handlers($scope)->each(function ($key, $value) use (&$check, $tester, $scope, $object) {
+            $tester->assertSame($scope, self::class);
+            $tester->assertTrue($this === $object);
+            if ($check === 0) {
+                $check++;
+            }
+            return true;//break 
+        });
+        $tester->assertTrue(1 === $check, 'Test break foreach (return true)');
+
+        $handlers($scope)->each(function ($key, $value) use ($expected, $tester, $scope) {
+            $tester->assertSame($scope, self::class);
+            $tester->assertSame($expected[self::class][$key], $value);
+        });
+        $this->assertSame('private_subchild_prop', $handlers->get('private_subchild_prop'), 'check reset scope');
+    }
+
+    /**
+     * @dataProvider providerByScopes
+     */
+    public function test_staticEach($scope)
+    {
+        $expected = [$scope => []];
+        foreach (self::providerByStaticProperties() as $value) {
+            if ($scope === ($value[1] ?? Fixtures\SubChildClass::class)) {
+                $expected[$scope][$value[0]] = $value[2];
+            }
+        }
+        $tester = $this;
+        $handlers = self::$fixtures['staticHandlers'];
+
+        $check = 0;
+        $handlers($scope)->each(function ($key, $value) use (&$check, $tester, $scope) {
+            $tester->assertSame($scope, self::class);
+            if ($check === 0) {
+                $check++;
+            }
+            return true;//break 
+        });
+        $tester->assertTrue(1 === $check, 'Test break foreach (return true)');
+        $handlers($scope)->each(function ($key, $value) use ($expected, $tester, $scope) {
+            /** @deprecated */
+            if (substr($key, 0, 7) !== 'static_') {
+                return;
+            }
+            $tester->assertSame($scope, self::class);
+            $tester->assertSame($expected[self::class][$key], $value);
+        });
+        $this->assertSame('static_private_subchild_prop', $handlers->get('static_private_subchild_prop'), 'check reset scope');
+
+    }
+
+    public function test_eachByReference()
+    {
+        $tester = $this;
+        $handlers = self::$fixtures['handlers'];
+        $handlers->each(function ($key, &$value) use ($tester, $handlers, &$check) {
+            $buf = $value;
+            $value = 'changed';
+            $tester->assertSame($value, $handlers->get($key));
+            $value = $buf;
+            $tester->assertSame($value, $handlers->get($key));
+            return true;
+        });
     }
 
     public function test_unset()
     {
-        $target = new ChildClass;
-        $sucker = new Sucker($target);
-        $sucker->unset('private_child_prop');
-        $this->assertTrue(!$sucker->isset('private_child_prop'));
+        $handlers = self::$fixtures['handlers'];
+        $this->assertTrue($handlers(ChildClass::class)->isset('private_child_prop'));
+        $buf = $handlers(ChildClass::class)->get('private_child_prop');
+        $handlers(ChildClass::class)->unset("private_child_prop");
+        $this->assertFalse($handlers(ChildClass::class)->isset('private_child_prop'));
+        $handlers(ChildClass::class)->set('private_child_prop', $buf);
+
+        $this->assertSame('private_subchild_prop', $handlers->get('private_subchild_prop'), 'check reset scope');
+
     }
 
-    public static function test_static_unset()
+    public function test_staticUnset()
     {
-        $target = ChildClass::class;
-        $sucker = new Sucker($target);
-        $check = false;
-        try {
-            $sucker->unset('private_static_child_prop');
-        } catch (\Error $e) {
-            $check = true;
-        } finally {
-            self::assertTrue($check);
-        }
-        restore_error_handler();
+        $handlers = self::$fixtures['staticHandlers'];
+        $check = Assert::isError(fn() => $handlers(ChildClass::class)->unset('static_private_child_prop'), 'Attempt to unset static property');
+        $this->assertTrue($check);
+        $this->assertSame('static_private_subchild_prop', $handlers->get('static_private_subchild_prop'), 'check reset scope');
     }
 
-    public function test_each()
+    /**
+     * @dataProvider providerByScopes
+     */
+    public function test_sandbox($scope)
     {
-        $target = new ChildClass;
-        $sucker = new Sucker($target);
+        $handlers = self::$fixtures['handlers'];
+        $subject = self::$fixtures['subject'];
         $tester = $this;
-        $keys = [];
-        $callThis = null;
-        $callClass = null;
-        $func = function ($key, &$value) use ($tester, $target, &$callThis, &$callClass, &$keys) {
-            $keys[$key] = &$value;
-            if (is_null($callThis)) {
-                $callThis = $this;
-            } else if ($callThis !== $this) {
-                $tester->assertTrue(false);
-            }
-            if (is_null($callClass)) {
-                $callClass = self::class;
-            } else if ($callClass !== self::class) {
-                $tester->assertTrue(false);
-            }
-        };
-        $sucker->each($func);
-        $expectedKeys = [
-            'private_child_prop' => 'private_child_prop',
-            'private_prop' => 'private_child_prop',
-            'public_prop' => 'public_child_prop',
-            'protected_prop' => 'protected_child_prop',
-            'public_child_prop' => 'public_child_prop',
-            'public_core_prop' => 'public_core_prop'
-        ];
-        $this->assertSame($expectedKeys, $keys);
-        $this->assertTrue($callThis === $target);
-        $this->assertSame($callClass, get_class($target));
-        // reference test
-        $buf = $keys['private_prop'];
-        $keys['private_prop'] = 'changed';
-        $this->assertSame($keys['private_prop'], $sucker->get('private_prop'));
-        $keys['private_prop'] = $buf;
-        $this->assertSame($buf, $sucker->get('private_prop'));
-        //end reference test
-        foreach ($keys as $key => $value) {
-            unset($keys[$key]);
-        }
-        $callThis = null;
-        $callClass = null;
-        $sucker->each($func, CoreClass::class);
-        $actualKeys = [
-            'public_prop' => 'public_child_prop',
-            'protected_prop' => 'protected_child_prop',
-            'public_child_prop' => 'public_child_prop',
-            'private_core_prop' => 'private_core_prop',
-            'public_core_prop' => 'public_core_prop',
-            'private_prop' => 'private_core_prop'
-        ];
-        $this->assertSame($actualKeys, $keys);
-        $this->assertTrue($callThis === $target);
-        $this->assertSame(CoreClass::class,$callClass );
+        $answer =& $handlers($scope)->sandbox(function (...$args) use ($tester, $scope, $subject) {
+            $tester->assertSame($scope, self::class);
+            $tester->assertTrue($subject === $this);
+            return $args[0];
+        }, ['hello']);
+        $tester->assertSame('hello', $answer);
+        $this->assertSame('private_subchild_prop', $handlers->get('private_subchild_prop'), 'check reset scope');
 
-        //reference test
-        $buf = $keys['private_prop'];
-        $keys['private_prop'] = 'changed';
-        $this->assertSame($keys['private_prop'], $sucker->get(CoreClass::class . '::private_prop'));
-        $this->assertSame('private_child_prop',$sucker->get('private_prop') );
-        $keys['private_prop'] = $buf;
-        $this->assertSame( $buf,$sucker->get(CoreClass::class . '::private_prop'));
-        //end reference test
     }
 
-    public static function test_static_each()
+    /**
+     * @dataProvider providerByScopes
+     */
+    public function test_staticSandbox($scope)
     {
-        $target = ChildClass::class;
-        $sucker = new Sucker($target);
-        $tester = self::class;
-        $keys = [];
-        $callThis = null;
-        $callClass = null;
-        $func = function ($key, &$value) use ($tester, $target, &$callClass, &$keys) {
-            $keys[$key] = &$value;
-            if (is_null($callClass)) {
-                $callClass = self::class;
-            } else if ($callClass !== self::class) {
-                $tester::assertTrue(false);
-            }
-        };
-        $sucker->each($func);
-        $actualKeys = [
-            'public_static_prop' => 'public_static_child_prop',
-            'protected_static_prop' => 'protected_static_child_prop',
-            'public_static_child_prop' => 'public_static_child_prop',
-            'protected_static_child_prop' => 'protected_static_child_prop',
-            'private_static_prop' => 'private_static_child_prop',
-            'private_static_child_prop' => 'private_static_child_prop',
-            'protected_static_core_prop' => 'protected_static_core_prop',
-            'public_static_core_prop' => 'public_static_core_prop'
-
-        ];
-        self::assertEquals($actualKeys,$keys );
-        self::assertSame($target,$callClass );
-        // reference test
-        $buf = $keys['private_static_prop'];
-        $keys['private_static_prop'] = 'changed';
-        self::assertSame( $keys['private_static_prop'],$sucker->get('private_static_prop'));
-        $keys['private_static_prop'] = $buf;
-        self::assertSame($buf,$sucker->get('private_static_prop') );
-        //end reference test
-        foreach ($keys as $key => $value) {
-            unset($keys[$key]);
-        }
-        $callThis = null;
-        $callClass = null;
-        $sucker->each($func, CoreClass::class);
-        $actualKeys = [
-            'public_static_prop' => 'public_static_core_prop',
-            'protected_static_prop' => 'protected_static_core_prop',
-            'protected_static_core_prop' => 'protected_static_core_prop',
-            'private_static_prop' => 'private_static_core_prop',
-            'private_static_core_prop' => 'private_static_core_prop',
-            'public_static_core_prop' => 'public_static_core_prop'
-        ];
-        self::assertEquals($actualKeys,$keys );
-        self::assertSame(CoreClass::class,$callClass );
-
-        //reference test
-        $buf = $keys['private_static_prop'];
-        $keys['private_static_prop'] = 'changed';
-        self::assertSame($keys['private_static_prop'],$sucker->get(CoreClass::class . '::private_static_prop') );
-        self::assertSame('private_static_child_prop',$sucker->get('private_static_prop') );
-        $keys['private_static_prop'] = $buf;
-        self::assertSame($buf,$sucker->get(CoreClass::class . '::private_static_prop') );
-        //end reference test
-    }
-
-    public function test_sandbox()
-    {
-        $target = new ChildClass;
-        $sucker = new Sucker($target);
-        $var = 'qwer';
+        $handlers = self::$fixtures['staticHandlers'];
         $tester = $this;
-        $selfClass = get_class($target);
-        $func = function ($a, $b, &$c) use ($tester, $target, &$selfClass) {
-            $tester->assertSame('hello',$a );
-            $tester->assertSame('friend', $b);
-            $tester->assertTrue($this === $target);
-            $tester->assertTrue(self::class === $selfClass);
-            $c = 'rewq';
-        };
-        unset($var);
-        $var = 'qwer';
-        $sucker->sandbox($func, null, ['hello', 'friend', &$var]);
-        $tester->assertSame('rewq',$var );
-        $selfClass = CoreClass::class;
-        $sucker->sandbox($func, CoreClass::class, ['hello', 'friend', &$var]);
-        $tester->assertSame('rewq',$var );
-    }
-    public function test_sandbox_by_reference(){}
-    
-    public static function test_sbox()
-    {
-        $inst = new class () extends MyClass {
-            private function method3()
-            {
-                return 'bay';
-            }
-
-            private static function method4()
-            {
-                return 'bay';
-            }
-        };
-        $self = static::class;
-
-        static::assertTrue(Sucker::sbox(function () use ($self) {
-                $self::assertTrue(MyClass::class === self::class);
-                $self::assertTrue($this->method3() === 'hello');
-                $self::assertTrue(self::method4() === 'hello');
-                return 'success';
-            }, $inst, MyClass::class) === 'success');
+        $answer =& $handlers($scope)->sandbox(function (...$args) use ($tester, $scope) {
+            $tester->assertSame($scope, self::class);
+            return $args[0];
+        }, ['hello']);
+        $tester->assertSame('hello', $answer);
+        $this->assertSame('static_private_subchild_prop', $handlers->get('static_private_subchild_prop'), 'check reset scope');
     }
 
-    public function test_run_action()
+    public function test_sandboxByReference()
     {
-        $target = new class() {
-            private $property = 'hello';
-            private $property2 = '2';
-            private $property3 = '3';
-
-            private function method($val)
-            {
-                return $val;
-            }
-        };
-        $sucker = new Sucker($target);
-        static::assertTrue($sucker->get('property') === 'hello');
-        static::assertTrue($sucker->isset('property'));
-        $sucker->set('property', 'bay');
-        static::assertTrue($sucker->get('property') === 'bay');
-        $sucker->unset('property');
-        static::assertTrue(!$sucker->isset('property'));
-        $self = $this;
-        $keys = [];
-
-        $sucker->each(function ($key, $value) use ($self, $target, &$keys) {
-            $keys[] = $key;
-            $self::assertTrue($this === $target);
-            $self::assertTrue(self::class === get_class($target));
-            $self::assertTrue($this->$key === $value);
-        });
-        static::assertSame($keys, ['property2', 'property3']);
-        static::assertTrue($sucker->call('method', 'zzz') === 'zzz');
-        static::assertTrue($sucker->sandbox(
-                function ($arg) use ($target, $self) {
-                    $self::assertTrue($target === $this && get_class($target) === self::class);
-                    return $arg;
-                }, null, ['zzz']
-            ) === 'zzz'
-        );
-    }
-
-    public function test_run_static_action()
-    {
-        $target = get_class(new class() {
-            private static $property = 'hello';
-            private static $property2 = '2';
-            private static $property3 = '3';
-
-            private static function method($val)
-            {
-                return $val;
-            }
-        });
-        $sucker = new Sucker($target);
-        static::assertTrue($sucker->get('property') === 'hello');
-        static::assertTrue($sucker->isset('property'));
-        $sucker->set('property', 'bay');
-        static::assertTrue($sucker->get('property') === 'bay');
-        try {
-            $sucker->set('no_property', 'bay');
-            static::assertTrue(false);
-        } catch (\Error $e) {
-            static::assertTrue(true);
-        }
-        try {
-            $sucker->unset('property');
-            static::assertTrue(false);
-        } catch (\Error $e) {
-            static::assertTrue(true);
-        }
-        $self = $this;
-        $keys = [];
-        $sucker->each(function ($key, $value) use ($self, $target, &$keys) {
-            $keys[] = $key;
-            $self::assertTrue(self::class === $target);
-            $self::assertTrue(self::$$key === $value);
-        });
-        static::assertSame($keys, ['property', 'property2', 'property3']);
-        static::assertSame($sucker->call('method', 'zzz'), 'zzz');
-        static::assertTrue($sucker->sandbox(
-                function ($arg) use ($target, $self) {
-                    $self::assertTrue($target === self::class);
-                    return $arg;
-                }, null, ['zzz']
-            ) === 'zzz'
-        );
-    }
-
-    public function test_run_action_in_parent_class()
-    {
-        $inst = new class () extends MyClass {
-            private function method3()
-            {
-                return 'bay';
-            }
-
-            private static function method4()
-            {
-                return 'bay';
-            }
-        };
-        $sucker = new Sucker($inst);
-        static::assertTrue($sucker->call(MyClass::class . '::method3') === 'hello');
-
-        $sucker = new Sucker(get_class($inst));
-        static::assertTrue($sucker->call(MyClass::class . '::method4') === 'hello');
-        $self = $this;
-        static::assertTrue($sucker->sandbox(function () use ($self) {
-                $self::assertTrue(MyClass::class === self::class);
-                return self::method4();
-            }, MyClass::class . '::') === 'hello');
+        $handlers = self::$fixtures['handlers'];
+        $arg = 'hello';
+        $answer =& $handlers->sandbox(function & (&...$args) {
+            return $args[0];
+        }, [&$arg]);
+        $arg = 'bay';
+        $this->assertTrue($arg === $answer);
     }
 }
