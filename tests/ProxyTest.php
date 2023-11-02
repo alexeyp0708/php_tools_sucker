@@ -20,6 +20,7 @@ class ProxyTest extends TestCase
         self::$fixtures['subject'] = $obj;
         self::$fixtures['staticHandlers'] = new Proxy(get_class($obj));
     }
+
     public static function providerByProperties(): array
     {
         return SuckerObjectHandlersTest::providerByProperties();
@@ -84,11 +85,11 @@ class ProxyTest extends TestCase
         $restore = $handlers($scope)->$property;
         $handlers($scope)->$property = 'changed';
         $this->assertSame('changed', $handlers($scope)->$property);
-        $handlers($scope)->$property=$restore;
+        $handlers($scope)->$property = $restore;
         $this->assertSame($expected, $handlers($scope)->$property);
         $this->assertSame('private_subchild_prop', $handlers->private_subchild_prop, 'check reset scope');
     }
-    
+
 
     /**
      * @dataProvider providerByStaticProperties
@@ -97,9 +98,9 @@ class ProxyTest extends TestCase
     {
         $handlers = self::$fixtures['staticHandlers'];
         $restore = $handlers($scope)->$property;
-        $handlers($scope)->$property= 'changed';
+        $handlers($scope)->$property = 'changed';
         $this->assertSame('changed', $handlers($scope)->$property);
-        $handlers($scope)->$property= $restore;
+        $handlers($scope)->$property = $restore;
         $this->assertSame($expected, $handlers($scope)->$property);
         $this->assertSame('static_private_subchild_prop', $handlers->static_private_subchild_prop, 'check reset scope');
     }
@@ -127,7 +128,7 @@ class ProxyTest extends TestCase
     public function test_returnCallByReference()
     {
         $handlers = self::$fixtures['handlers'];
-        $obj=(object)['prop'=>'hello'];
+        $obj = (object)['prop' => 'hello'];
         $var2 =& $handlers(Fixtures\CoreClass::class)->testReturnReference($obj);
         $var2 = 'bay';
         $this->assertSame($var2, $obj->prop);
@@ -186,7 +187,7 @@ class ProxyTest extends TestCase
         $tester = $this;
         $handlers = self::$fixtures['handlers'];
 
-        foreach($handlers($scope) as $key=>$value){
+        foreach ($handlers($scope) as $key => $value) {
             $tester->assertSame($expected[$scope][$key], $value);
         }
         $this->assertSame('private_subchild_prop', $handlers->private_subchild_prop, 'check reset scope');
@@ -206,10 +207,10 @@ class ProxyTest extends TestCase
         $tester = $this;
         $handlers = self::$fixtures['staticHandlers'];
 
-        foreach($handlers($scope) as $key=>$value){
+        foreach ($handlers($scope) as $key => $value) {
             $tester->assertSame($expected[$scope][$key], $value);
         }
-        
+
         $this->assertSame('static_private_subchild_prop', $handlers->static_private_subchild_prop, 'check reset scope');
     }
 
@@ -227,7 +228,9 @@ class ProxyTest extends TestCase
     public function test_staticUnset()
     {
         $handlers = self::$fixtures['staticHandlers'];
-        $check = Assert::isError(function() use($handlers) {unset($handlers(Fixtures\ChildClass::class)->static_private_child_prop);}, 'Attempt to unset static property');
+        $check = Assert::isError(function () use ($handlers) {
+            unset($handlers(Fixtures\ChildClass::class)->static_private_child_prop);
+        }, 'Attempt to unset static property');
         $this->assertTrue($check);
         $this->assertSame('static_private_subchild_prop', $handlers->static_private_subchild_prop, 'check reset scope');
     }

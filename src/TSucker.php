@@ -3,7 +3,7 @@
 namespace Alpa\Tools\Sucker;
 
 /**
- * @deprecated 
+ * @deprecated
  * Trait TSucker
  * This sucker helps to manipulate additional data bound to the class.
  * It also helps to call methods of traits that have been assigned an alias.

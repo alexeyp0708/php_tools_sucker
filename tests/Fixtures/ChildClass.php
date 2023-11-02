@@ -15,7 +15,7 @@ class ChildClass extends CoreClass
     public static $static_public_prop = 'static_public_child_prop';
     protected static $static_protected_prop = 'static_protected_child_prop';
     public static $static_public_child_prop = 'static_public_child_prop';
-    
+
     private function private_child_method()
     {
         return 'private_child_method';
@@ -30,7 +30,7 @@ class ChildClass extends CoreClass
     {
         return 'protected_child_method';
     }
-    
+
     private static function static_private_child_method()
     {
         return 'static_private_child_method';

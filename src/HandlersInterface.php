@@ -9,6 +9,6 @@ interface HandlersInterface
     public function setScope(?string $scope): void;
 
     public function getScope(): string;
-    
-    public function & sandbox(\Closure $call,...$args);
+
+    public function & sandbox(\Closure $call, ...$args);
 }

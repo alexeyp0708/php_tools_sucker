@@ -33,5 +33,5 @@ class SubChildClass extends ChildClass
     {
         return 'static_private_subchild_method';
     }
-    
+
 }

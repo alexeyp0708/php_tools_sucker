@@ -1,18 +1,20 @@
 ﻿# Alpa\Tools\Sucker\Sucker
+
 For unit testing. The sucker for classes and objects to call private methods.
 
-The component provides access to private  properties of an object / class.
+The component provides access to private properties of an object / class.
 
-##Changes in versions
+## Changes in versions
 
 ### Versions
+
 * 0.0.3  (Warn: No backward compatibility)
-  - Passing arguments by reference and returning results by reference for Sucker object.
-  - Returning results by reference for Proxy object
-  - Methods added Sucker::apply и Sucker::setRef  
-  - Due to passing variables by reference,The functionality of passing arguments via unpacking (operator ...) has been replaced with passing arguments in an array.
-    This applies to  Sucker::run, Sucker::sbox, Sucker::sanbox, Sucker::apply methods
-    
+    - Passing arguments by reference and returning results by reference for Sucker object.
+    - Returning results by reference for Proxy object
+    - Methods added Sucker::apply и Sucker::setRef
+    - Due to passing variables by reference,The functionality of passing arguments via unpacking (operator ...) has been
+      replaced with passing arguments in an array. This applies to Sucker::run, Sucker::sbox, Sucker::sanbox, Sucker::
+      apply methods
 
 ## Implementation basis
 
@@ -38,10 +40,12 @@ Helper::sanbox(function(...$args){
     return $this->prop;
 },$b,A::class,'argument 1');
 ```
-In this case, you need to remember the main rules -
-by default, the execution behavior of methods and access to object properties will be the same as in
-  [\Closure->bindTo](https://www.php.net/manual/ru/closure.bindto.php)
+
+In this case, you need to remember the main rules - by default, the execution behavior of methods and access to object
+properties will be the same as in
+[\Closure->bindTo](https://www.php.net/manual/ru/closure.bindto.php)
 Example:
+
 ```php
 <?php
 class A{
@@ -229,9 +233,10 @@ $propResult=$inst('prop');// hello
 
 # Alpa\Tools\Sucker\Proxy
 
-The component provides access to private and protected members of an object / class through a proxy object.
-In order to obtain private members of an object / class, the [Alpa\Tools\Sucker\Sucker](#alpatoolssuckersucker) component is used.
-And for syntactic sugar, the [Alpa\Tools\ProxyObject](https://github.com/alexeyp0708/php_tools_proxy_object) component is used.
+The component provides access to private and protected members of an object / class through a proxy object. In order to
+obtain private members of an object / class, the [Alpa\Tools\Sucker\Sucker](#alpatoolssuckersucker) component is used.
+And for syntactic sugar, the [Alpa\Tools\ProxyObject](https://github.com/alexeyp0708/php_tools_proxy_object) component
+is used.
 
 ```php
 <?php
@@ -265,7 +270,9 @@ unset($proxy->a);
 unset($proxy(A::class)->a);
 
 ```
+
 Working with static properties
+
 ```php
 <?php
 class A{

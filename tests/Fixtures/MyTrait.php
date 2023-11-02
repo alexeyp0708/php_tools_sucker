@@ -1,7 +1,7 @@
 <?php
 
 namespace Alpa\Tools\Tests\Sucker\Fixtures;
-/** @deprecated  */
+/** @deprecated */
 trait MyTrait
 {
     private string $prop = 'success';
