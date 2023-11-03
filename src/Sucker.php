@@ -8,7 +8,7 @@ namespace Alpa\Tools\Sucker;
  * Its task is to work with protected / private properties and methods implemented in the object's classes
  * (current class and parent classes). Performs actions such as get | set | unset | isset | each | call | sandbox
  */
-class Sucker
+class Sucker implements SuckerInterface
 {
     protected static object $actions;
     protected \Closure $runner;

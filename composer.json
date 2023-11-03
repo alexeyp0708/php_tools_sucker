@@ -20,7 +20,7 @@
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5",
-    "alpa/phpunit_helpers": "dev-master"
+    "alpa/phpunit_helpers": "dev-master#46f760f"
   },
   "autoload-dev": {
     "psr-4": {

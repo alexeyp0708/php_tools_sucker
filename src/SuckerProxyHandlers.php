@@ -7,7 +7,7 @@ use Alpa\Tools\ProxyObject\Proxy;
 
 class SuckerProxyHandlers extends InstanceActions implements HandlersInterface
 {
-    private Sucker $sucker;
+    private  SuckerInterface $sucker;
 
     public function __construct($target)
     {

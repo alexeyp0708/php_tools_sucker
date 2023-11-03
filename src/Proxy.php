@@ -4,7 +4,7 @@ namespace Alpa\Tools\Sucker;
 
 use Alpa\Tools\ProxyObject\Proxy as CoreProxy;
 
-final class Proxy extends CoreProxy
+final class Proxy extends CoreProxy 
 {
     public function __construct($target, string $handlers = SuckerProxyHandlers::class)
     {

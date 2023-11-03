@@ -1,5 +1,5 @@
 <?php
-
+/** @deprecated  */
 include __DIR__ . '/../vendor/autoload.php';
 
 class A
