@@ -1,6 +1,6 @@
 ﻿# Sucker
 
-For unit testing. The sucker for classes and objects to call private methods.
+For unit testing. Sucker to classes and objects for accessing private methods and properties.
 
 The component provides access to private properties of an object / class.
 
