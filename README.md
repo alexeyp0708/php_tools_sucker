@@ -133,7 +133,103 @@ $slaveClass=A::class;
 $call=$call->bindTo($target,$slaveClass);
 echo $call();
 ```
+## API Sucker class
+```php
+<?php
 
+use Alpa\Tools\Sucker\Sucker;
+
+$sucker = new Socker($object); // for members object
+// or
+$sucker=new Sucker(Target::class); // for static members class
+
+//  при смене области видимости, обьект один и тот же (а не создается новый)
+$sucker===$sucker(A::class);  
+// сброc область видимости
+$sucker(null); 
+/* Внимание: область видимости сохраняется до первого вызова метода API 
+и после сбрасывается на область видимости по умолчанию (класс обьекта).*/
+
+/* & - указывает что аргументы нужно передавать по ссылке (в аргументах указан только для наглядности), 
+или можно получать результат по ссылке. */
+// запросить значение  свойства обькта/класса (можно по сыслке)
+& $sucker->get( $prop ); & $sucker( SCOPE::class )->get( $prop );
+
+// установить значение для свойства обькта/класса 
+$sucker->set( $prop,  $value ); $sucker(SCOPE::class)->set( $prop, $value );
+
+// установить значение для свойства обькта/класса по ссылке
+$sucker->setRef( $prop, & $value ); $socker(SCOPE::class)->setRef( $prop, & $value );
+
+// проверить наличие свойства обькта/класса 
+$sucker->isset( $prop ); $sucker(SCOPE::class)->isset( $prop );
+
+// удалить свойство из обьекта. для статического свойства класса будет вызвана стандартная ошибка. 
+$sucker->unset( $prop ); $sucker(SCOPE::class)->unset( $prop );
+
+// перебрать свойства объекта/класса.
+/* in each closure  => self::class===SCOPE::class and opening $this */
+$sucker->each(function ( $key, & $value ){return true;/* break*/}); $sucker( SCOPE::class )->each( function ($key, & $value){return true;/*break*/} );
+
+// вызвать метод объекта/класса.
+& $sucker->call( $method, ...$args ); & $sucker( SCOPE::class )->call( $prop ,...$args );
+
+// вызвать метод объекта/класса с возможностьбю передачи аргументов по ссылке.
+& $sucker->apply( $method, [& $arg,...] ); & $sucker( SCOPE::class )->apply( $method, [& $arg,...] ); 
+
+// Песочница для обработки обьекта по своему усмотрению
+/* in sandbox closure  => self::class===SCOPE::class and opening $this */
+& $sucker->sandbox( function & (& $arg){},[ & $arg,...] ); & $sucker( SCOPE::class )->sandbox( function & (& $arg){},[ & $arg,...] );
+ 
+```
+
+## API Proxy class
+
+```php
+<?php
+
+use Alpa\Tools\Sucker\Proxy;
+
+$proxy = new Proxy($object); // for members object
+// or
+$proxy=new Sucker(Target::class); // for static members class
+
+// при смене области видимости, обьект один и тот же (а не создается новый)
+$proxy===$proxy(A::class);  
+// сброc область видимости
+$proxy(null); 
+/* Внимание: область видимости сохраняется до первого вызова метода API 
+и после сбрасывается на область видимости по умолчанию (класс обьекта).*/
+
+// запросить значение  свойства обькта/класса (можно по сыслке)
+& $proxy->prop; & $proxy(SCOPE::class)->prop;
+
+//  установить значение для свойства обькта/класса 
+$proxy->prop=$vslue;  $proxy(SCOPE::class)->prop=$value;
+
+// проверить наличие свойства обькта/класса 
+isset($proxy->prop); isset($proxy(SCOPE::class)->prop); 
+
+// удалить свойство из обьекта. для статического свойства класса будет вызвана стандартная ошибка. 
+unset($proxy->prop); unset($proxy(SCOPE::class)->prop); 
+
+// перебрать свойства объекта/класса.
+foreach ($proxy as $key=>$value){
+  
+}
+foreach ($proxy(SCOPE::class) as $key=>$value){
+  
+}
+
+// вызвать метод объекта/класса.
+& $proxy->method(...$args);  & $proxy(SCOPE::class)->method(...$args);
+
+/* Песочница для обработки обьекта по своему усмотрению.
+Аргументы можно передавать по ссылке, а также результат получать по ссылке*.
+/* in sandbox closure  => self::class===SCOPE::class and opening $this */
+& $proxy(function & (...$args){},[& $arg,...]); & $proxy(SCOPE::class)(function & (...$args){},[ & $arg,...]);
+
+```
 ## Get value  properties
 
 ```php
@@ -149,6 +245,7 @@ echo $handler->setScope(A::class)->get('private_prop');// hello
 //get by reference
 $var = & $handler->get('private_prop');// & return A::$private_prop ==='hello'
 $handler->setScope(null);
+
 //or
 $sucker=new Sucker(new B);
 echo $sucker->get('private_prop');// bay
