@@ -3,7 +3,7 @@
 
 namespace Alpa\Tools\Sucker;
 
-
+/** @deprecated  */
 class Helpers
 {
     /**

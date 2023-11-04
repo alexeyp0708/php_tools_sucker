@@ -2,6 +2,7 @@
 
 namespace Alpa\Tools\Sucker;
 
+/** @deprecated  */
 class SuckerData
 {
     public ?string $member;

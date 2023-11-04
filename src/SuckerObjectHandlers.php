@@ -4,31 +4,31 @@
 namespace Alpa\Tools\Sucker;
 
 
-class SuckerObjectHandlers implements SuckerHandlersInterface
+final class SuckerObjectHandlers implements SuckerHandlersInterface
 {
     private object $subject;
     private ?string $scope = null;
     private string $selfClass;
 
-    final public function setSubject($subject): self
+    public function setSubject($subject): self
     {
         $this->subject = $subject;
         $this->selfClass = get_class($subject);
         return $this;
     }
 
-    final public function getSubject($subject): object
+    public function getSubject($subject): object
     {
         return $this->subject;
     }
 
-    final public function setScope(?string $class): self
+    public function setScope(?string $class): self
     {
         $this->scope = $class;
         return $this;
     }
 
-    final public function & get(string $member)
+    public function & get(string $member)
     {
         $call = (SuckerActions::getAction('get'))->bindTo($this->subject, $this->scope ?? $this->selfClass);
         return $call($member);

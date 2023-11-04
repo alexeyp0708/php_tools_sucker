@@ -4,6 +4,7 @@ For unit testing. Sucker to classes and objects for accessing private methods an
 
 The component provides access to private properties of an object / class.
 
+(return by reference and arguments by reference)
 ## Install
 
 `composer require alpa/tools_sucker:1.0.*`
@@ -495,5 +496,5 @@ $var = $proxy(A::class)(function($arg){
 //references
 $var = & $proxy(function & (&$arg){
     return $arg;
-}); // $var = &$arg variables are linked by reference
+},[&$arg]); // $var = &$arg variables are linked by reference
 ```

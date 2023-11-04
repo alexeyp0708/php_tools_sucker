@@ -3,10 +3,9 @@
 namespace Alpa\Tools\Sucker;
 
 use Alpa\Tools\ProxyObject\Handlers\ActionsInterface;
-use Alpa\Tools\ProxyObject\Handlers\InstanceActions;
 use Alpa\Tools\ProxyObject\ProxyInterface;
 
-class SuckerProxyHandlers extends Sucker implements ActionsInterface
+final class SuckerProxyHandlers extends Sucker implements ActionsInterface
 {
 
     public function & run(string $action, $target, ?string $prop, $value_or_arguments, ProxyInterface $proxy)
