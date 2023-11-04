@@ -2,66 +2,64 @@
 
 namespace Alpa\Tools\Sucker;
 
+use Alpa\Tools\ProxyObject\Handlers\ActionsInterface;
 use Alpa\Tools\ProxyObject\Handlers\InstanceActions;
 use Alpa\Tools\ProxyObject\ProxyInterface;
 
-class SuckerProxyHandlers extends InstanceActions implements HandlersInterface
+class SuckerProxyHandlers extends Sucker implements ActionsInterface
 {
-    private  SuckerInterface $sucker;
 
-    public function __construct($target)
+    public function & run(string $action, $target, ?string $prop, $value_or_arguments, ProxyInterface $proxy)
     {
-        $this->sucker = new Sucker($target);
+        $answer=null;
+        switch ($action){
+            case 'get':
+                $answer = & $this->get($prop);
+                break;
+            case 'set':
+                $this->set($prop,$value_or_arguments);
+                break;
+            case 'isset':
+                $answer =  $this->isset($prop);
+                break;
+            case 'unset':
+                $this->unset($prop);
+                break;
+            case 'iterator':
+                $answer =  $this->iterator($target);
+                break;
+            case 'toString':
+                $answer = $this->toString($target);
+                break;
+            case 'call':
+                $answer = &$this->call($prop,...$value_or_arguments);
+                break;
+            case 'invoke':
+                $answer = $this($value_or_arguments);
+                break;
+        }
+        return $answer;
     }
 
-    public function setScope(?string $scope): void
+    public static function & static_run(string $action, $target, ?string $prop, $value_or_args, ProxyInterface $proxy)
     {
-        ($this->sucker)($scope);
+        // TODO: Implement static_run() method.
     }
-
-    public function getScope(): string
+    
+    private function toString($target):string
     {
-        return $this->sucker->getScope();
+        return $target.'';
     }
-
-    public function & sandbox(\Closure $call, ...$args)
+    
+    private function iterator($target): \Iterator
     {
-        return $this->sucker->sandbox($call, ...$args);
-    }
-
-    public function & get($target, string $prop, $value_or_args, ProxyInterface $proxy)
-    {
-        return $this->sucker->get($prop);
-    }
-
-    public function set($target, string $prop, $value_or_args, ProxyInterface $proxy): void
-    {
-        $this->sucker->set($prop, $value_or_args);
-    }
-
-    public function isset($target, string $prop, $value_or_args, ProxyInterface $proxy): bool
-    {
-        return $this->sucker->isset($prop);
-    }
-
-    public function unset($target, string $prop, $value_or_args, ProxyInterface $proxy): void
-    {
-        $this->sucker->unset($prop);
-    }
-
-    public function & call($target, string $prop, $value_or_args, ProxyInterface $proxy)
-    {
-        return $this->sucker->call($prop, ...$value_or_args);
-    }
-
-    public function iterator($target, $prop, $value_or_args, ProxyInterface $proxy): \Iterator
-    {
-        if (is_object($target) && ($target instanceof \IteratorAggregate)) {
+        /*if (is_object($target) && ($target instanceof \IteratorAggregate)) {
+            // пересать в комбинации с Итреатором Прокси
             return $target->getIterator();
-        }
+        }*/
         if (is_string($target)) {
-            return new SuckerClassIterator($this->sucker, $this->getScope());
+            return new SuckerClassIterator($this, $this->getScope());
         }
-        return new SuckerIterator($this->sucker, $this->getScope());
+        return new SuckerIterator($this, $this->getScope());
     }
 }
