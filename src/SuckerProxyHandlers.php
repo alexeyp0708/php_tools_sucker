@@ -3,7 +3,7 @@
 namespace Alpa\Tools\Sucker;
 
 use Alpa\Tools\ProxyObject\Handlers\InstanceActions;
-use Alpa\Tools\ProxyObject\Proxy;
+use Alpa\Tools\ProxyObject\ProxyInterface;
 
 class SuckerProxyHandlers extends InstanceActions implements HandlersInterface
 {
@@ -29,32 +29,32 @@ class SuckerProxyHandlers extends InstanceActions implements HandlersInterface
         return $this->sucker->sandbox($call, ...$args);
     }
 
-    public function & get($target, string $prop, $value_or_args, Proxy $proxy)
+    public function & get($target, string $prop, $value_or_args, ProxyInterface $proxy)
     {
         return $this->sucker->get($prop);
     }
 
-    public function set($target, string $prop, $value_or_args, Proxy $proxy): void
+    public function set($target, string $prop, $value_or_args, ProxyInterface $proxy): void
     {
         $this->sucker->set($prop, $value_or_args);
     }
 
-    public function isset($target, string $prop, $value_or_args, Proxy $proxy): bool
+    public function isset($target, string $prop, $value_or_args, ProxyInterface $proxy): bool
     {
         return $this->sucker->isset($prop);
     }
 
-    public function unset($target, string $prop, $value_or_args, Proxy $proxy): void
+    public function unset($target, string $prop, $value_or_args, ProxyInterface $proxy): void
     {
         $this->sucker->unset($prop);
     }
 
-    public function & call($target, string $prop, $value_or_args, Proxy $proxy)
+    public function & call($target, string $prop, $value_or_args, ProxyInterface $proxy)
     {
         return $this->sucker->call($prop, ...$value_or_args);
     }
 
-    public function iterator($target, $prop, $value_or_args, Proxy $proxy): \Iterator
+    public function iterator($target, $prop, $value_or_args, ProxyInterface $proxy): \Iterator
     {
         if (is_object($target) && ($target instanceof \IteratorAggregate)) {
             return $target->getIterator();

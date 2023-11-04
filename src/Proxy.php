@@ -2,19 +2,25 @@
 
 namespace Alpa\Tools\Sucker;
 
-use Alpa\Tools\ProxyObject\Proxy as CoreProxy;
+use Alpa\Tools\ProxyObject\ProxyAbstract;
 
-final class Proxy extends CoreProxy 
+final class Proxy extends ProxyAbstract 
 {
-    public function __construct($target, string $handlers = SuckerProxyHandlers::class)
+    /**
+     * Proxy constructor.
+     * @param $target
+     * @param string $handlers
+     * @throws \Exception
+     */
+    public function __construct($target,  string $handlers = SuckerProxyHandlers::class)
     {
         if (!is_subclass_of($handlers, HandlersInterface::class)
         ) {
             throw new \Exception('argument 2: the object must implement interface' . HandlersInterface::class .
                 ', or if class name, then the class must implement interface ' . HandlersInterface::class);
         }
-        $handlers = new $handlers($target);
-        parent::__construct($target, $handlers);
+        $this->target=$target;
+        $this->handlers = new $handlers($target);
     }
 
     /**

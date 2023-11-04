@@ -2,7 +2,9 @@
 
 namespace Alpa\Tools\Sucker;
 
-interface HandlersInterface
+use Alpa\Tools\ProxyObject\Handlers\ActionsInterface;
+
+interface HandlersInterface extends ActionsInterface
 {
     public function __construct($target);
 

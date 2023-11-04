@@ -196,7 +196,7 @@ class ProxyTest extends TestCase
     /**
      * @dataProvider providerByScopes
      */
-    public function test_staticForeach($scope)
+    public function test_staticForeach(string $scope)
     {
         $expected = [$scope => []];
         foreach (self::providerByStaticProperties() as $value) {
@@ -206,7 +206,7 @@ class ProxyTest extends TestCase
         }
         $tester = $this;
         $handlers = self::$fixtures['staticHandlers'];
-
+        
         foreach ($handlers($scope) as $key => $value) {
             $tester->assertSame($expected[$scope][$key], $value);
         }
