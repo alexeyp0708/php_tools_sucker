@@ -4,11 +4,12 @@ namespace Alpa\Tools\Sucker;
 
 use Alpa\Tools\ProxyObject\Handlers\InstanceActions;
 use Alpa\Tools\ProxyObject\ProxyInterface;
-/** @deprecated  */
+
+/** @deprecated */
 class _SuckerProxyHandlers extends InstanceActions implements HandlersInterface
 {
-    private  SuckerInterface $sucker;
-    
+    private SuckerInterface $sucker;
+
     public function __construct($target)
     {
         $this->sucker = new Sucker($target);

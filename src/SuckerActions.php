@@ -8,7 +8,7 @@ final class SuckerActions
 {
     private static array $actions = [];
     private static bool $init = false;
-    private static array $cache=[];
+    private static array $cache = [];
 
     /**
      * @param string $action
@@ -16,9 +16,9 @@ final class SuckerActions
      */
     final static public function getAction(string $action, bool $is_static = false): \Closure
     {
-        $method ='action_'.($is_static ? 'static_' . $action : $action);
-        if(!isset(self::$cache[$method])){
-            self::$cache[$method]=self::{$method}();
+        $method = 'action_' . ($is_static ? 'static_' . $action : $action);
+        if (!isset(self::$cache[$method])) {
+            self::$cache[$method] = self::{$method}();
         }
         return self::$cache[$method];
     }
@@ -72,28 +72,28 @@ final class SuckerActions
              return $this->$member;*/
         };
     }
-    
+
     private static function action_static_get()
     {
         return function & ($member) {
             return self::${$member};
         };
     }
-    
+
     private static function action_set()
     {
         return function ($member, &$value) {
             $this->$member = &$value;
         };
     }
-    
+
     private static function action_static_set()
     {
         return function ($member, &$value) {
             self::$$member = &$value;
         };
     }
-   
+
     private static function action_call()
     {
         return function & ($member, &...$args) {
@@ -105,7 +105,7 @@ final class SuckerActions
             return $answer;
         };
     }
-    
+
     private static function action_static_call()
     {
         return function & ($member, &...$args) {
@@ -117,7 +117,7 @@ final class SuckerActions
             return $answer;
         };
     }
-   
+
     private static function action_each()
     {
         return function ($each) {
@@ -129,7 +129,7 @@ final class SuckerActions
             unset($value);
         };
     }
-    
+
     private static function action_static_each()
     {
         return function ($each) {
@@ -143,28 +143,28 @@ final class SuckerActions
             unset($value);
         };
     }
-    
+
     private static function action_isset()
     {
         return function ($member) {
             return isset($this->$member);
         };
     }
-    
+
     private static function action_static_isset()
     {
         return function ($member) {
             return isset(self::${$member});
         };
     }
-    
+
     private static function action_unset()
     {
         return function ($member) {
             unset($this->$member);
         };
     }
-    
+
     private static function action_static_unset()
     {
         return function ($member) {

@@ -5,6 +5,7 @@ For unit testing. The sucker for classes and objects to call private methods.
 The component provides access to private properties of an object / class.
 
 ## Install
+
 `composer require alpa/tools_sucker:1.0.*`
 
 ## Preface

@@ -206,7 +206,7 @@ class ProxyTest extends TestCase
         }
         $tester = $this;
         $handlers = self::$fixtures['staticHandlers'];
-        
+
         foreach ($handlers($scope) as $key => $value) {
             $tester->assertSame($expected[$scope][$key], $value);
         }

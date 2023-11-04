@@ -11,7 +11,7 @@
   ],
   "require": {
     "php": "^7.4||^8",
-    "alpa/tools_proxy_object": "dev-master"
+    "alpa/tools_proxy_object": "v1.0.14"
   },
   "autoload": {
     "psr-4": {

@@ -5,7 +5,7 @@ namespace Alpa\Tools\Sucker;
 use Alpa\Tools\ProxyObject\Handlers\ActionsInterface;
 use Alpa\Tools\ProxyObject\ProxyAbstract;
 
-final class Proxy extends ProxyAbstract 
+final class Proxy extends ProxyAbstract
 {
     /**
      * Proxy constructor.
@@ -14,7 +14,7 @@ final class Proxy extends ProxyAbstract
      */
     public function __construct($target)
     {
-        $this->target=$target;
+        $this->target = $target;
         $this->handlers = new SuckerProxyHandlers($target);
     }
 
