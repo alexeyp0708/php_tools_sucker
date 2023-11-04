@@ -6,55 +6,61 @@ class SuckerClassIterator implements \Iterator
 {
     private Sucker $sucker;
     private ?string $scope;
-    private int $key=0;
-    protected array $props=[];
-    public function __construct(Sucker $sucker,string $scope=null)
+    private int $key = 0;
+    protected array $props = [];
+
+    public function __construct(Sucker $sucker, string $scope = null)
     {
-        $this->sucker=$sucker;
-        $this->scope=$scope;
+        $this->sucker = $sucker;
+        $this->scope = $scope;
         //$this->rewind();
     }
-    private function getProps():array
+
+    private function getProps(): array
     {
-        return $this->sucker->sandbox(function (){
-            $reflector=new \ReflectionClass(static::class);
-            $props=array_keys($reflector->getStaticProperties());
+        return ($this->sucker)($this->scope)->sandbox(function () {
+            $reflector = new \ReflectionClass(static::class);
+            $props = array_keys($reflector->getStaticProperties());
             return $props;
-        },$this->scope);
+        });
     }
-    public function rewind():void
+
+    public function rewind(): void
     {
-        $this->key=0;
-        $this->props=$this->getProps();
+        $this->key = 0;
+        $this->props = $this->getProps();
     }
+
     public function key()
     {
-        return $this->props[$this->key]??null;
+        return $this->props[$this->key] ?? null;
     }
-    public function next():void
+
+    public function next(): void
     {
         $this->key++;
     }
-    public function valid():bool
+
+    public function valid(): bool
     {
-        $prop=$this->key();
-        if($prop===null){
-            $diff=array_values(array_diff($this->getProps(),$this->props));
-            if(count($diff)>0){
-                $this->props=$diff;
+        $prop = $this->key();
+        if ($prop === null) {
+            $diff = array_values(array_diff($this->getProps(), $this->props));
+            if (count($diff) > 0) {
+                $this->props = $diff;
                 $this->rewind();
                 return true;
             }
             return false;
         }
-        return true; 
+        return true;
     }
 
     public function current()
     {
-        $prop=$this->key();
-        return $this->sucker->sandbox(function($prop){
+        $prop = $this->key();
+        return ($this->sucker)($this->scope)->sandbox(function ($prop) {
             return static::$$prop;
-        },$this->scope,[$prop]);
+        }, [$prop]);
     }
 }

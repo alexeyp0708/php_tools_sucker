@@ -1,297 +1,402 @@
-﻿# Alpa\Tools\Sucker\Sucker
+﻿# Sucker
+
 For unit testing. The sucker for classes and objects to call private methods.
 
-The component provides access to private  properties of an object / class.
+The component provides access to private properties of an object / class.
 
-##Changes in versions
+## Install
 
-### Versions
-* 0.0.3  (Warn: No backward compatibility)
-  - Passing arguments by reference and returning results by reference for Sucker object.
-  - Returning results by reference for Proxy object
-  - Methods added Sucker::apply и Sucker::setRef  
-  - Due to passing variables by reference,The functionality of passing arguments via unpacking (operator ...) has been replaced with passing arguments in an array.
-    This applies to  Sucker::run, Sucker::sbox, Sucker::sanbox, Sucker::apply methods
-    
+`composer require alpa/tools_sucker:1.0.*`
 
-## Implementation basis
+## Preface
 
-Component Implements the following concept of accessing private properties :
+Let's create classes for examples.
 
 ```php
-//Example
-class Helper{
-     public static function sandbox(\Closure $call,$target,?string $slaveClass=null,...$args)
-     {
-         $slaveClass=!empty($slaveClass)?$slaveClass:(is_string($target)?$target:get_class($target));
-         $target=!is_string($target)?$target:null;
-         $call=$call->bindTo($target,$slaveClass);
-         return $call(...$args);
-     }
-}
+<?php 
 class A{
-    private $prop=1;
-}
-class B extends A{}
-$b=new B;
-Helper::sanbox(function(...$args){
-    return $this->prop;
-},$b,A::class,'argument 1');
-```
-In this case, you need to remember the main rules -
-by default, the execution behavior of methods and access to object properties will be the same as in
-  [\Closure->bindTo](https://www.php.net/manual/ru/closure.bindto.php)
-Example:
-```php
-<?php
-class A{
-    protected $prop=__CLASS__;
-    protected function method(){
-      return 'A_'.$this->prop;
-    }
-    protected function re_method(){
-      return 'A_'.$this->prop;
-    }
-    private function private_method(){
-      return 'A_'.$this->prop;
-    }
-}
-class B extends A{
-    protected $prop=__CLASS__;
-    protected function re_method(){
-      return 'B_'.$this->prop;
-    }
-    private function private_method(){
-      return 'B_'.$this->prop;
-    }
-}
-$call = function(){
-    var_dump(get_class($this) !== self::class);
-    var_dump(static::class !== self::class);
-    var_dump(get_class($this) === static::class);
-    var_dump($this->prop===B::class);
-    var_dump($this->method() === 'A_'.B::class);
-    var_dump($this->re_method() === 'B_'.B::class);
-    var_dump($this->private_method() === 'A_'.B::class);
-};
-$target=new B;
-$call=$call->bindTo($target,A::class);
-$call();
-```
-
-## Getting started
-
-```php
-<?php
-class A{
-    private $prop='bay';
-    private static $static_prop='bay';
-    private function method(){
-        return 'bay';
-    }
-    
-};
-class B extends A{
-    private $prop='hello';
-    private static $static_prop='hello';
-    private function method(){
-        return 'hello';
-    }
-    private function & method_reference(&$arg){
+    private $private_prop='hello';
+    private static $static_private_prop='hello';
+    private function private_method($arg)
+    {
         return $arg;
     }
-};
-$target=new B();
-$target2=B::class;
-$sucker=new \Alpa\Tools\Sucker\Sucker($target);
-$sucker_static=new \Alpa\Tools\Sucker\Sucker($target2);
-
-// returns value properties
-echo $sucker->get('prop');//  'hello'
-echo $sucker->get('A::prop');// 'bay'
-
-// returns value static properties
-echo $sucker_static->get('static_prop');// return 'hello'
-echo $sucker_static->get('A::static_prop');// return 'bay'
-
-// returns by reference
-$var= & $sucker->get('prop');// hello
-$var='HELLO';
-echo $sucker->get('prop');// HELLO
-$var='hello';// value restore
-unset($var);
-
-$var= & $sucker->get('A::prop');// bay
-$var='BAY';
-echo $sucker->get('A::prop');// BAY
-$var='bay';// value restore
-unset($var);
-
-
-// call methods
-echo $sucker->call('method');// 'hello' 
-echo $sucker->call('A::method');// 'bay' 
-
-//  apply methods (test references)
-$test='test';
-$result=& $sucker->apply('method_reference',[&$test]);
-$test='TEST';
-echo $result.'=='.$test; // TEST == TEST
-
-// set value properties
-$sucker->set('prop','other hello');// void;
-
-// set value properties by reference
-
-$value='other hello';
-$sucker->setRef('prop',$value);// void;
-$value='OTHER HELLO';
-echo $sucker->get('prop');//'OTHER HELLO'
-echo "\n";
-unset($value);
-$sucker->set('prop','hello');
-
-// isset member
-echo $sucker->isset('prop'); // true;
-
-// unset member
-$sucker->unset('prop'); // void;
-//echo $sucker->get('prop'); //  Undefined property: B::$prop
-
-//for each
-$sucker->each(function($key,$value){
-    echo $key .' => '.$value; // prop => hello
-}); // void;
-
-$sucker->each(function($key,$value){
-    echo $key .' => '.$value; // prop => bay
-    // return true; // BREAK;
-},'A'); // void;
-
-// each by reference
-$sucker->each(function($key,&$value){
-    echo $key .' => '.$value; // prop => hello
-    if ($key==='prop'){
-        $value='HELLO';    
+    private function & private_methodByReference(&$arg=null)
+    {
+        return $arg;
     }
-    
-}); // void;
-echo $sucker->get('prop');
-$result= $sucker->sandbox(function(...$args){
-    // $args=>['Hello','Bay'];
-    // $this=>$target
-    // self::class => B::class //get_class($target);
-    //your code
-    // return your result
-},null,'Hello','Bay');
+}
 
-// sanbox
-$result= $sucker->sandbox(function(...$args){
-    // $args=>['Hello','Bay'];
-    // $this=>$target
-    // $this surrounded by A class
-    // self::class => A::class;
-    // your code
-    // return your result
-},'A','Hello','Bay');
-//or 
-$result =\Alpa\Tools\Sucker\Sucker::sbox(function(...$args){
-
-},$target,A::class,'arg1','arg2');
+class B extends A{
+    private $private_prop='bay';
+    private static $static_private_prop='bay';
+    private function private_method($arg)
+    {
+        return strtoupper($arg);
+    }
+}
 ```
 
-### Use trait
+### syntactic sugar
 
-Using the trait is convenient because the sucker functionality can be used through the target object itself. In this
-case, the target object becomes callable. It is syntactic sugar. If you need to test the private properties of a class,
-then for this create a fixture of the child class extending the testing class and add the
-trait `\Alpa\Tools\UnitTest\Sucker\TSucker`.
+There are 3 ways (API) to use the component.
+
+1 way - if you need efficiency and a minimum of executable code under the hood.
+
+```php
+use A;
+use B;
+use Alpa\Tools\Sucker\SuckerObjectHandlers;
+use Alpa\Tools\Sucker\SuckerClassHandlers;
+
+$handler=new SuckerObjectHandlers(new B);
+//scope B class
+echo $handler->get('private_prop');// bay
+echo "\n";
+// scope A class;
+echo $handler->setScope(A::class)->get('private_prop');// hello
+echo "\n";
+$handler->setScope(null);// reset scope
+
+$staticHandlers=new SuckerClassHandlers(B::class);
+echo $staticHandlers->get('static_private_prop');// hello
+echo "\n";
+echo $handler->setScope(A::class)->get('static_private_prop');// hello
+echo "\n";
+// environment maintained at A class level
+echo $handler->get('static_private_prop');// hello
+$handler->setScope(null); // reset scope
+```
+
+2 way - Wrapper pattern. Improves the previous solution.
+
+```php
+use A;
+use B;
+use Alpa\Tools\Sucker\Sucker;
+$sucker=new Sucker(new B);
+echo $sucker->get('private_prop');// bay
+echo "\n";
+echo $sucker(A::class)->get('private_prop');// hello  
+echo "\n";
+// Warn : The Scope is automatically reset after calling methods that are responsible for accessing members of the observable object
+echo $sucker->get('private_prop');// bay
+echo "\n";
+
+$sucker=new Sucker(B::class);
+echo $sucker->get('static_private_prop');// bay
+echo "\n";
+echo $sucker(A::class)->get('static_private_prop');// hello  
+echo "\n";
+// Warn : The Scope is automatically reset after calling methods that are responsible for accessing members of the observable object
+echo $sucker->get('static_private_prop');// bay
+echo "\n";
+```
+
+3 way - Proxy. syntactic sugar.
+
+```php
+use A;
+use B;
+use Alpa\Tools\Sucker\Proxy;
+$proxy=new Proxy(new B);
+echo $proxy->private_prop;// bay
+echo $proxy(A::class)->private_prop;// hello  
+// Warn : The Scope is automatically reset after calling methods that are responsible for accessing members of the observable object
+echo $proxy->private_prop;// bay
+
+$proxy=new Proxy(B::class);
+echo $proxy->static_private_prop;// bay
+echo $proxy(A::class)->static_private_prop;// hello  
+// Warn : The Scope is automatically reset after calling methods that are responsible for accessing members of the observable object
+echo $proxy->static_private_prop;// bay
+```
+
+# Basic principle
+
+The code implements the following principle:
 
 ```php
 <?php
-
-class A{
-    private $prop='bay';
-   
+Class A
+{
+  private $prop='hello';
 }
-class B extends A{
-    use \Alpa\Tools\Sucker\TSucker;
-       protected $prop='hello';
+$call=function(){
+  // var_dump($this);//$target
+  // var_dump(self::class);//$slaveClass
+  return $this->prop;
+  
 };
-$inst=new B(); 
-$propResult=$inst('prop');// hello
-$propResult=$inst('prop','get');// hello
-$propResult=$inst('A::prop','get');// bay
-$inst('A::prop','set','other result');
-$propResult=$inst('prop');// hello
-//$propResult=$inst('A::prop','other result');// bay
+$target= new A();
+$slaveClass=A::class;
+$call=$call->bindTo($target,$slaveClass);
+echo $call();
 ```
 
-# Alpa\Tools\Sucker\Proxy
-
-The component provides access to private and protected members of an object / class through a proxy object.
-In order to obtain private members of an object / class, the [Alpa\Tools\Sucker\Sucker](#alpatoolssuckersucker) component is used.
-And for syntactic sugar, the [Alpa\Tools\ProxyObject](https://github.com/alexeyp0708/php_tools_proxy_object) component is used.
+## Get value  properties
 
 ```php
-<?php
-class A{
-	private $a=1;
-	private function method(){
-		return $this->a;
-	}
-}
-class B extends A{
-	private $a=2;
-	public $b=2;
-}
-$obj=new B();
-$proxy = new Alpa\Tools\Sucker\Proxy($obj);
-echo $proxy->a;// 2
-echo $proxy(A::class)->a; //1
-$proxy(A::class)->a=11;
-echo $proxy(A::class)->method();//11
-echo isset($proxy->a);//true
-echo isset($proxy(A::class)->a);//true
-foreach($proxy as $key=>$value){
-	// 'a'=>2
-	// 'b'=>2
-}
-foreach($proxy(A::class) as $key=>$value){
-	// 'a'=>11
-	// 'b'=>2	
-}
-unset($proxy->a);
-unset($proxy(A::class)->a);
+<?php 
 
+use Alpa\Tools\Sucker\SuckerObjectHandlers;
+use Alpa\Tools\Sucker\Sucker;
+use Alpa\Tools\Sucker\Proxy;
+
+$handler=new SuckerObjectHandlers(new B);
+echo $handler->get('private_prop');// bay
+echo $handler->setScope(A::class)->get('private_prop');// hello
+//get by reference
+$var = & $handler->get('private_prop');// & return A::$private_prop ==='hello'
+$handler->setScope(null);
+//or
+$sucker=new Sucker(new B);
+echo $sucker->get('private_prop');// bay
+echo $sucker(A::class)->get('private_prop');// hello
+//get by reference
+$var = & $sucker(A::class)->get('private_prop');// & return A::$private_prop ==='hello'
+
+//or 
+$proxy=new Proxy(new B);
+echo $proxy->private_prop;// bay
+echo $proxy(A::class)->private_prop;// hello
+//get by reference
+$var = & $proxy(A::class)->private_prop;// & return A::$private_prop ==='hello'
 ```
-Working with static properties
+
+## Set value to properties.
+
 ```php
-<?php
-class A{
-	private static $a=1;
-	private static function  method(){
-		return self::$a;
-	}
+<?php 
+
+use Alpa\Tools\Sucker\SuckerObjectHandlers;
+use Alpa\Tools\Sucker\Sucker;
+use Alpa\Tools\Sucker\Proxy;
+
+
+$handler=new SuckerObjectHandlers(new B);
+
+//the value is passed by reference. Therefore it is necessary to pass it through a variable
+$var='BAY'; // set by reference
+$handler->set('private_prop',$var); //B::$private_prop=$var=>'BAY';
+$handler->setScope(A::class)->set('private_prop',$var); //A::$private_prop=$var=>'BAY';
+$handler->setScope(null);
+
+//or
+$sucker=new Sucker(new B);
+$sucker->set('private_prop','HELLO');//B::$private_prop=$var=>'HELLO';
+$sucker(A::class)->set('private_prop','HELLO');// //A::$private_prop=$var=>'HELLO';
+//get by reference
+$var='HELLO';
+$sucker(A::class)->setRef('private_prop',$var);// A::$private_prop = &$var=>'HELLO'
+
+//or 
+$proxy=new Proxy(new B);
+$proxy->private_prop='HELLO';// B::$private_prop='HELLO'
+$proxy(A::class)->private_prop='HELLO';// A::$private_prop='HELLO'
+
+//With a proxy, transmission by reference is not possible
+```
+
+## Check (isset)  property
+
+```php
+
+use Alpa\Tools\Sucker\SuckerObjectHandlers;
+use Alpa\Tools\Sucker\Sucker;
+use Alpa\Tools\Sucker\Proxy;
+
+
+$handler=new SuckerObjectHandlers(new B);
+
+echo $handler->isset('private_prop'); //check $obj(B)::$private_prop;
+echo $handler->setScope(A::class)->isset('private_prop'); //check $obj(A)::$private_prop;
+$handler->setScope(null);
+//or
+$sucker=new Sucker(new B);
+$sucker->isset('private_prop');//check $obj(B)::$private_prop
+$sucker(A::class)->isset('private_prop');// check $obj(A)::$private_prop
+
+//or
+$proxy=new Proxy(new B);
+echo isset($proxy->private_prop);// check $obj(B)::$private_prop
+echo isset($proxy(A::class)->private_prop);// $obj(A)::$private_prop
+
+```
+
+## Unset  property
+
+```php
+
+use Alpa\Tools\Sucker\SuckerObjectHandlers;
+use Alpa\Tools\Sucker\Sucker;
+use Alpa\Tools\Sucker\Proxy;
+
+
+$handler=new SuckerObjectHandlers(new B);
+
+$handler->unset('private_prop'); //unset $obj(B)::$private_prop;
+$handler->setScope(A::class)->unset('private_prop'); //unset  $obj(A)::$private_prop;
+$handler->setScope(null);
+//or
+$sucker=new Sucker(new B);
+$sucker->unset('private_prop');//check $obj(B)::$private_prop
+$sucker(A::class)->unset('private_prop');// check $obj(A)::$private_prop
+
+//or
+$proxy=new Proxy(new B);
+unset($proxy->private_prop);// check $obj(B)::$private_prop
+unset($proxy(A::class)->private_prop);// $obj(A)::$private_prop
+
+```
+
+## Iterate properties
+
+```php
+
+use Alpa\Tools\Sucker\SuckerObjectHandlers;
+use Alpa\Tools\Sucker\Sucker;
+use Alpa\Tools\Sucker\Proxy;
+
+
+$handler=new SuckerObjectHandlers(new B);
+
+$handler->each(function($key, &$value){
+    // $value variable passed by reference
+    echo self::class===B::class; 
+    // $this =>object B
+    return true; // break
+}); //unset $obj(B)::$private_prop;
+$handler->setScope(A::class)->each(function ($key,$value){
+    echo self::class===A::class; 
+    return true; // break
+}); 
+$handler->setScope(null);
+
+//or
+$sucker=new Sucker(new B);
+$sucker->each(function($key, &$value){
+    // $value variable passed by reference
+    echo self::class===B::class; 
+    // $this =>object B
+    return true; // break
+}); 
+
+$sucker(A::class)->each(function ($key,$value){
+    echo self::class===A::class; 
+    return true; // break
+}); 
+
+//or
+$proxy=new Proxy(new B);
+foreach($proxy as $key => $value){
+    // your code
 }
-class B extends A{
-	private static $a=2;
-	public static $b=2;
-}
-$proxy = new Alpa\Tools\Sucker\Proxy(B::class);
-echo $proxy->a;// 2
-echo $proxy(A::class)->a; //1
-$proxy(A::class)->a=11;
-echo $proxy(A::class)->method();//11
-echo isset($proxy->a);//true
-echo isset($proxy(A::class)->a);//true
-foreach($proxy as $key=>$value){
-	// 'a'=>2
-	// 'b'=>2
-}
-foreach($proxy(A::class) as $key=>$value){
-	// 'a'=>11
-	// 'b'=>2	
+foreach($proxy(A::class) as $key => $value){
+    // your code
 }
 ```
 
+## Call methods
+
+```php
+<?php 
+
+use Alpa\Tools\Sucker\SuckerObjectHandlers;
+use Alpa\Tools\Sucker\Sucker;
+use Alpa\Tools\Sucker\Proxy;
+
+$handler=new SuckerObjectHandlers(new B);
+$arg='hello'; // passing a variable by reference
+$var = $handler->call('private_method',$arg);// HELLO 
+$var =  $handler->setScope(A::class)->call('private_method',$arg);// hello
+// return by reference
+$var = & $handler->call('private_methodByReference',$arg);// $var = &$arg variables are linked by reference
+$handler->setScope(null);
+unset($var,$arg);
+//or
+$sucker=new Sucker(new B);
+$arg='hello';
+$var = $sucker->call('private_method','hello');// HELLO
+$var = $sucker(A::class)->call('private_method','hello');// hello
+//return by reference
+$var = & $sucker(A::class)->call('private_method','hello');// hello
+// arguments by reference
+$var = & $sucker(A::class)->apply('private_methodByReference',[&$arg]); // $var = &$arg variables are linked by reference
+unset($var,$arg);
+//or 
+$proxy=new Proxy(new B);
+$var = $proxy->private_method('hello');// HELLO
+$var = $proxy(A::class)->private_method('hello');// hello
+//return by reference
+$var = & $proxy(A::class)->private_method('hello');
+```
+
+## Sandbox
+
+```php
+<?php 
+
+use Alpa\Tools\Sucker\SuckerObjectHandlers;
+use Alpa\Tools\Sucker\Sucker;
+use Alpa\Tools\Sucker\Proxy;
+
+$handler=new SuckerObjectHandlers(new B);
+$arg='hello'; // passing a variable by reference
+$var = $handler->sandbox(function($arg){
+    echo self::class===B::class;
+    // $this - object B
+    return $arg;
+},[$arg]);// hello 
+
+$var = $handler->setScope(A::class)->sandbox(function($arg){
+    echo self::class===A::class;
+    // $this - object A
+    return $arg;
+},[$arg]);// hello 
+ 
+ //references
+$var = & $handler->sandbox(function & (&$arg){
+    return $arg;
+},[&$arg]);// $var = &$arg variables are linked by reference
+$handler->setScope(null);
+unset($var,$arg);
+//or
+$sucker=new Sucker(new B);
+$arg='hello';
+$var = $sucker->sandbox(function($arg){
+    echo self::class===B::class;
+    // $this - object B
+    return $arg;
+},[$arg]);
+$var = $sucker(A::class)->setScope(A::class)->sandbox(function($arg){
+    echo self::class===A::class;
+    // $this - object A
+    return $arg;
+},[$arg]);
+// references
+$var = & $sucker(A::class)->sandbox(function & (&$arg){
+    return $arg;
+},[&$arg]); // $var = &$arg variables are linked by reference
+unset($var,$arg);
+
+//or 
+$proxy=new Proxy(new B);
+$arg='hello';
+$var = $proxy(function($arg){
+    echo self::class===B::class;
+     // $this - object B
+    return $arg;
+},[$arg]);// hello
+
+$var = $proxy(A::class)(function($arg){
+    echo self::class===A::class;
+     // $this - object A
+    return $arg;
+},[$arg]);// hello
+
+//references
+$var = & $proxy(function & (&$arg){
+    return $arg;
+}); // $var = &$arg variables are linked by reference
+```

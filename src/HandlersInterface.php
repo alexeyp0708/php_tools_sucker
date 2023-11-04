@@ -2,11 +2,15 @@
 
 namespace Alpa\Tools\Sucker;
 
-interface HandlersInterface
+use Alpa\Tools\ProxyObject\Handlers\ActionsInterface;
+
+interface HandlersInterface extends ActionsInterface
 {
-    public function __construct($target,string $scope);
-    public function setScope(string $scope):void;
-    public function getScope():string;
-    public function initDefaultScope():void;
-    public function restoreDefaultScope():void;
+    public function __construct($target);
+
+    public function setScope(?string $scope): void;
+
+    public function getScope(): string;
+
+    public function & sandbox(\Closure $call, ...$args);
 }
